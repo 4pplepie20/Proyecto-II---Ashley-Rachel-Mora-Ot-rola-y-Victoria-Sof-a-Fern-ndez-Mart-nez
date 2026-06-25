@@ -67,130 +67,132 @@ def salir_del_juego(): # Se ejecuta al presionar la X del menú primcipal
     ventana.destroy() # Cierra por completo el juego
 
 
-# Ventana principal (Menú)
-ventana = tk.Tk()
-ventana.title("Juego Proyecto II")
-ventana.geometry("620x520")
-ventana.resizable(False, False)
+# Crea la ventana principal (Menú)
+ventana = tk.Tk() 
+ventana.title("Juego Proyecto II") # Texto que sale en la barra superior
+ventana.geometry("620x520") # Define las dimensiones de la ventana
+ventana.resizable(False, False) # Para que no se pueda cambiar el tamaño de la ventana
 
 # El fondo inicial se toma del objeto faccion_actual
-main_frame = tk.Frame(ventana, bg=faccion_actual.fondo_menu)
-main_frame.pack(fill=tk.BOTH, expand=True)
+main_frame = tk.Frame(ventana, bg=faccion_actual.fondo_menu) # Contenedor que 
+                                                              #agrupa los botones para poder cambiarles el color facilmente
+main_frame.pack(fill=tk.BOTH, expand=True) # Para que el contenedor cubra el 100% de la pantalla
 
 
 # Interfaz para facciones
-label_faccion = tk.Label(main_frame, text="Seleccionar Facción:", font=("Arial", 10, "bold"),
+label_faccion = tk.Label(main_frame, text="Seleccionar Facción:", font=("Arial", 10, "bold"), # Etiqueta que indica la seleccion de facciones
                          bg=faccion_actual.fondo_menu, fg="white")
-label_faccion.place(x=20, y=15)
+label_faccion.place(x=20, y=15) # Ubicación de la etiqueta en el menú principal
 
-variable_faccion = tk.StringVar(ventana)
-variable_faccion.set(faccion_actual.nombre) #Opción por defecto
+variable_faccion = tk.StringVar(ventana) # Crea un objeto especial de tkinter que almacena el texto seleccionado
+variable_faccion.set(faccion_actual.nombre) # Le asigna el valor inicial de medieval
 
-#Pasar los nombres al OptionMenu
-nombres_facciones = []
-for f in lista_facciones:
-    nombres_facciones.append(f.nombre)
+#Pasar los nombres de las facciones
+nombres_facciones = [] # Crea una lista vacía 
+for f in lista_facciones: # Ciclo que revisa uno por uno los objetos (f) de la lista original
+    nombres_facciones.append(f.nombre) # Extra el nombre de los atributos y los inserta en una lista nueva, para el menú desplegable
 
-selector_faccion = tk.OptionMenu(main_frame, variable_faccion, *nombres_facciones, command=cambiar_faccion)
-selector_faccion.config(font=("Arial", 10), bg="#FFFFFF")
-selector_faccion.place(x=170, y=12)
+# Menú desplegable
+selector_faccion = tk.OptionMenu(main_frame, variable_faccion, *nombres_facciones, command=cambiar_faccion) # Crea la cajita desplegable
+selector_faccion.config(font=("Arial", 10), bg="#FFFFFF") 
+selector_faccion.place(x=170, y=12) 
 
 
-#Funciones para abrir ventanas secundarias con facción
+#Funciones para abrir ventanas secundarias y cambio de facción
 def click1():#PARA ABRIR EL REGISTRO
-    global ventana_actual
-    ventana.withdraw()
+    global ventana_actual # Avisa que va a cambiar la variable para ver cual ventana secundaria está activa
+    ventana.withdraw() # Para ocultar la ventana principal
     
-    top = tk.Toplevel(ventana)
+    top = tk.Toplevel(ventana) # Crea la ventana secundaria "Registro"
     top.title("Registro")
     top.geometry("420x280")
     top.config(bg=faccion_actual.fondo_menu) #Para aplicar la facción
-    ventana_actual = top
+    ventana_actual = top # Guarda la nueva ventana en la variable global, para saber qué pantalla tiene abierta el usuario
     
-    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), 
+    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), # Crea botón de X en la ventana secundaria "Registro"
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)
     boton_cerrado.place(x=385, y=5)
     
-    top.protocol("WM_DELETE_WINDOW", cerrar_root)
+    top.protocol("WM_DELETE_WINDOW", cerrar_root) # Para que se ejecute cerrar_root al presionar la X original de la ventana también
 
 def click2(): #PARA ABRIR EL JUEGO
-    global ventana_actual
-    ventana.withdraw()
+    global ventana_actual # Aviso de cambio de variable para saber cual ventana está activa
+    ventana.withdraw() # Oculta la ventana principal
     
-    top = tk.Toplevel(ventana)
+    top = tk.Toplevel(ventana) # Crea la ventana secundaria "Juego"
     top.title("Juego")
     top.geometry("600x420")
-    top.config(bg=faccion_actual.fondo_menu)
-    ventana_actual = top
+    top.config(bg=faccion_actual.fondo_menu) #Aplica la faccion elegida
+    ventana_actual = top # Para saber cuál pantalla tine abrierta el usuario
     
-    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), 
+    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), # Crea botón X en ventana secundaria "Juego"
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)
     boton_cerrado.place(x=565, y=5)
     
-    top.protocol("WM_DELETE_WINDOW", cerrar_root)
+    top.protocol("WM_DELETE_WINDOW", cerrar_root) # Para que se pueda usar la X principal de la ventana tambien
 
 def click3(): #PARA ABRIR EL PUNTAJE
-    global ventana_actual
-    ventana.withdraw()
+    global ventana_actual # Para saber cual ventana está activa
+    ventana.withdraw() # Oculta la ventana principal
     
-    top = tk.Toplevel(ventana)
+    top = tk.Toplevel(ventana) # Crea la ventana secundaria "Puntaje"
     top.title("Puntaje")
     top.geometry("420x280")
-    top.config(bg=faccion_actual.fondo_menu)
-    ventana_actual = top
+    top.config(bg=faccion_actual.fondo_menu) # Aplica la faccion 
+    ventana_actual = top # Para saber que pantalla está abierta
     
-    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), 
+    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), # Crea boton de X en ventana secundaria "Puntaje"
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)
     boton_cerrado.place(x=385, y=5)
     
-    top.protocol("WM_DELETE_WINDOW", cerrar_root)
+    top.protocol("WM_DELETE_WINDOW", cerrar_root) # Para pode usar la X principal de la ventana
 
 
 #Botones ventana principal
 
 boton_cerrar_principal = tk.Button(main_frame, text='X', font=("Arial", 10, "bold"), #Para cerrar ventana principal
                                    bg=faccion_actual.botones, fg=faccion_actual.texto_boton,
-                                   command=salir_del_juego)
+                                   command=salir_del_juego) # Al darle click, la funcion salir_del_juego se ejecuta
 boton_cerrar_principal.place(x=585, y=5)
 
-Boton1 = tk.Button(main_frame, text="Registro", command=click1, 
+Boton1 = tk.Button(main_frame, text="Registro", command=click1, # Boton de registro en ventana principal, ejecuta la funcion click 1
                    bg=faccion_actual.botones, fg=faccion_actual.texto_boton,
                    activebackground="#C3D12B", activeforeground="white",
                    font=("Arial", 12, "bold"), width=24, height=2)
 Boton1.place(x=186,y=100)
 
-Boton2 = tk.Button(main_frame, text="JUGAR", command=click2, 
+Boton2 = tk.Button(main_frame, text="JUGAR", command=click2, # Boton de jugar en ventana principal, ejecuta la funcion click 2
                    bg=faccion_actual.botones, fg=faccion_actual.texto_boton,
                    activebackground="#C3D12B", activeforeground="white",
                    font=("Arial", 12, "bold"), width=24, height=2)
 Boton2.place(x=186, y=200)
 
-Boton3 = tk.Button(main_frame, text="Puntajes", command=click3, 
+Boton3 = tk.Button(main_frame, text="Puntajes", command=click3, # Boton de puntajes en ventana principal, ejecuta la funcion click 3
                    bg=faccion_actual.botones, fg=faccion_actual.texto_boton,
                    activebackground="#C3D12B", activeforeground="white",
                    font=("Arial", 12, "bold"), width=24, height=2)
 Boton3.place(x=186, y=300)
 
 
-#BOTÓN MÚSICA
-pygame.mixer.init()
+#BOTÓN 4 MÚSICA
+pygame.mixer.init() #Prepara a la computadora para reproducir la musica
 
-def alternar_musica():
+def alternar_musica():  #Evalua el estado booleano de musica_activa
     global musica_activa
-    if not musica_activa:
+    if not musica_activa: # Si la musica está apagada procede a encenderla con try
         try:
-            pygame.mixer.music.load(faccion_actual.cancion)
-            pygame.mixer.music.play(-1)
-            Boton4.config(text="Pausar Música")
-            musica_activa = True
-        except pygame.error:
+            pygame.mixer.music.load(faccion_actual.cancion) # Carga el atributo de la facción seleccionada 
+            pygame.mixer.music.play(-1) # Para que la funcion se ejecute de forma infinita
+            Boton4.config(text="Pausar Música") # Cambia el texto del botón segun se encienda o apague
+            musica_activa = True #Actualiza el estado de la variable
+        except pygame.error: #Si hay un error con el archivo mostrará el siguiente mensaje
             messagebox.showerror("Error", f"No se encontró el archivo de sonido: {faccion_actual.cancion}")
     else:
-        pygame.mixer.music.stop()
-        Boton4.config(text="Reproducir Música")
-        musica_activa = False
+        pygame.mixer.music.stop() # Si la música está activa la apaga
+        Boton4.config(text="Reproducir Música") # Cambia el texto del boton 
+        musica_activa = False # Cambia el estado de la variable global 
 
-Boton4 = tk.Button(main_frame, text="ON/OFF MUSICA", command=alternar_musica, 
+Boton4 = tk.Button(main_frame, text="ON/OFF MUSICA", command=alternar_musica, #Crea el boton de música en la ventana principal
                    bg=faccion_actual.botones, fg=faccion_actual.texto_boton)
 Boton4.place(x=260, y=460)  
 
