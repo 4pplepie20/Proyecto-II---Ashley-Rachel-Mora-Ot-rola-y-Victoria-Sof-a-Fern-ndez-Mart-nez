@@ -303,7 +303,7 @@ def click3(): #PARA ABRIR EL PUNTAJE
         # Botón para cerrar ÚNICAMENTE esta subventana y regresar al menú de puntajes
         btn_regresar = tk.Button(sub_top, text='X', font=("Arial", 10, "bold"), 
                                  bg=faccion_actual.botones, fg=faccion_actual.texto_boton, 
-                                 command=sub_top.destroy)
+                                 command=cerrar_root)
         btn_regresar.place(x=415, y=5)
         
         lbl_tit_sub = tk.Label(sub_top, text=titulo_categoria, font=("Arial", 14, "bold"),
