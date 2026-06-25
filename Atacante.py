@@ -1,122 +1,119 @@
-import time
+import time #Biblioteca que consigue el tiempo
 
-"ESTADO DE TORRES"
-class EstadoTorre: #Sirve para representar 
-    def __init__(self, vida):
-        self.vida = vida
-        self.congelada = False
-    
-    def recibir_dano(self, dano):
-        self.vida -= dano
-    
-    def congelar(self):
-        self.congelada = True
-
-"CLASE BASE DE TORRES"
-class Torres:
-
-    'Atributo'
-    def __init__(self, nombre, costo, vida, dano, alcance, habilidad): #Todos los datos necesarios sobre las torres
-        self.nombre = nombre #Nombre de la torre
-        self.costo = costo #Cuántas monedas se necesitan para comprarla
-        self.vida = vida #La cantidad de vida predeterminada
-        self.dano = dano #El daño que produce a enemigos
-        self.alcance = alcance #El alcance de sus ataques
-        self.habilidad = habilidad #El número de segundos necesarios para usar la habilidad especial
-        self.recarga = 0 #El inicio del turno, empieza en 0
-    
-    'Métodos'
-    def dano_recibido(self, cantidad): #Daño causado a la torre
-        self.vida -= cantidad #La vida se resta según la cantidad de daño que causa el enemigo
-
-    def verificación_rango(self, fila_torre, columna_torre, fila_unidad, columna_unidad): #Verifica si un enemigo está lo suficientemente cerca de la torre
-        distancia = abs(fila_torre - fila_unidad) + abs(columna_torre - columna_unidad) #Calcula la distancia y se utiliza valor absoluto para evitar números negativos
-        
-        if distancia <= self.alcance: #Condición de que debe ser una distancia menor o igual al alcance de la torre
-            return True #La distancia es menor o igual al alcance de la torre, así que se ataca
-        return False #La distancia es mayor, no cumple la condición
-    
-    def ataque(self, estadotorre): #Daño que ejerce al enemigo
-        estadotorre.recibir_dano(self.dano) #Llama a la función que recibe el objetivo
-    
-    def habilidad_disponible(self): #Función para saber si ya es posible utilizar la habilidad
-        tiempo_ahora = time.time() #Ofrece el tiempo actual en segundos
-
-        if tiempo_ahora - self.recarga >= self.habilidad: #Condición de que debe el tiempo debe ser mayor o igual a la cantidad necesaria para activar el poder
-            return True #Cumple la condición
-        return False #No cumple la condición
-
-    def habilidad_especial(self): #Es solo un molde para las subclases
-        pass
-
-
-"TIPOS DE TORRES"
-
-'TORRE BÁSICA'
-class TorreBasica(Torres): #Subclase con el tipo de torre, con el "Torres" dentro del nombre de la clase deja una herencia de información
+"ESTADO DEL ATACANTE"
+class EstadoAtacante: #Clase que verifica cuál es el estado del atacante
 
     'Atributos'
-    def __init__(self): 
-        super().__init__( #El super(). llama a los atributos de la clase base
-            "Torre Básica", #Nombre de la torre
-            50, #Costo
-            100, #Vida (HP)
-            20, #Daño ejercido
-            2, #Alcance
-            5 #Tiempo de recarga
-        )
+    def __init__(self, vida): #__init__ es para asignar atributos dentro de la clase
+        self.vida = vida #Vida que posee el atacante
+        self.escudo = False
+
+    'Métodos'    
+    def recibir_dano(self, dano): #Función para evaluar el daño recibido
+        self.vida -= dano #Se le resta a la vida el daño que se ha recibido
     
-    def habilidad_especial(self, estadotorre): #Habilidad especial de la torre
-        if self.habilidad_disponible(): #Condición si ha pasado el tiempo suficiente
-            estadotorre.recibir_dano(self.dano) #Hace daño dos veces por el doble disparo
-            estadotorre.recibir_dano(self.dano)
+    def activar_escudo(self):
+        self.escudo = True
 
-            self.recarga = time.time() #Regresa al tiempo pasado
+"CLASE BASE DE LOS ATACANTES"
+class Atacante: #Clase que funciona como molde para la función de los atacantes
 
-class TorrePesada(Torres): 
+    'Atributos'
+    def __init__(self, nombre, costo, vida, dano, velocidad, habilidad): #Datos a conocer de cada uno de los atacantes
+        self.nombre = nombre
+        self.costo = costo
+        self.vida = vida
+        self.dano = dano
+        self.velocidad = velocidad
+        self.habilidad = habilidad
+        self.recarga = 0
+    
+    'Métodos'
+    def dano_recibido(self, cantidad): #Función que indica la cantidad de daño causado hacia el atacante
+        self.vida -= cantidad #Cálculo entre la cantidad de vida del atacante menos la cantidad de vida que quita
+    
+    def mover(self, fila_actual):
+        fila_actual += self.velocidad
+        return fila_actual
+    
+    def ataque(self, objetivo):
+        objetivo.recibir_dano(self.dano)
+    
+    def habilidad_disponible(self):
+        tiempo_actual = time.time()
+        if tiempo_actual - self.recarga >= self.habilidad:
+            return True
+        return False
+    
+    def usar_habilidad(self):
+        self.recarga = time.time()
+
+    def habilidad_especial(self):
+        pass
+
+class SoldadoBasico(Atacante):
     def __init__(self):
         super().__init__(
-            "Torre Pesada",
-            135,
-            200,
+            "Soldado Básico",
             40,
-            2,
-            12
-        )
-    
-    def habilidad_especial(self, estadotorre):
-        if self.habilidad_disponible():
-            estadotorre.recibir_dano(self.dano * 2) #El daño se duplica
-
-            self.recarga = time.time()
-    
-class TorreMagica(Torres):
-    def __init__(self):
-        super().__init__(
-            "Torre Mágica",
-            75,
-            75,
-            10,
-            3,
+            100,
+            20,
+            1,
             5
         )
     
-    def habilidad_especial(self, estadotorre):
+    def habilidad_especial(self, objetivo):
         if self.habilidad_disponible():
-            estadotorre.congelar() #Llama la función congelar y la vuelve True
+            objetivo.recibir_dano()
+            objetivo.recibir_dano()
 
-            self.recarga = time.time()
-
-"JUGADOR DE DEFENSA"
-class Defensor: #Clase que representa a quien defiende
+            self.usar_habilidad()
+        
+class Tanque(Atacante):
     def __init__(self):
-        self.dinero = 300 #Dinero inicial
-        self.torres = [] #Lista donde se guardarán las torres que compre
-    
-    def comprar_torres(self, torre): #Función para poder comprar torres
-        if self.dinero >= torre.costo: #Condición que el dinero debe ser igual o mayor al costo de la torre
-            self.dinero -= torre.costo #Si se cumple la función, se resta el dinero del jugador con el costo de la torre
-            self.torres.append(torre) #Concatenación para guardar torre comprada en la lista
 
-            return True #Sí sucedió la compra
-        return False #No cumplió la condición, así que no sucedió la compra
+        super().__init__(
+            "Tanque",
+            90,
+            250,
+            35,
+            1,
+            8
+        )
+    
+    def habilidad_especial(self, objetivo):
+        if self.habilidad_disponible():
+            objetivo.recibir_daño(self.dano * 2)
+
+            self.usar_habilidad()
+
+class Explorador(Atacante):
+    def __init__(self):
+        super().__init__(
+            "Explorador",
+            70,
+            80, 
+            15,
+            3,
+            4
+        )
+    def habilidad_especial(self, estadoatacante):
+        if self.habilidad_disponible():
+            estadoatacante.activar_escudo()
+
+            self.usar_habilidad()
+
+class RolAtacante:
+    def __init__(self):
+        self.dinero = 500
+        self.atacantes = []
+    
+    def comprar_atacante(self, atacante):
+        if self.dinero >= atacante.costo:
+            self.dinero -= atacante.costo
+            self.atacantes.append(atacante)
+            return True
+        return False
+    
+    def ganar_dinero(self, ganancias):
+        self.dinero += ganancias
