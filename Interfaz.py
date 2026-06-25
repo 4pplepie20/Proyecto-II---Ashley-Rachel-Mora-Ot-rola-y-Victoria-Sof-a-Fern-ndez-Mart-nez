@@ -3,6 +3,8 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import pygame
 import json
+from RegistroyCuenta import RegistroUsuarios
+gestor_usuarios = RegistroUsuarios ()
 
 #CLASE DE FACCIONES
 class Facciones: #Molde para crear objetos tipo facción 
@@ -112,6 +114,52 @@ def click1():#PARA ABRIR EL REGISTRO
     boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), # Crea botón de X en la ventana secundaria "Registro"
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)
     boton_cerrado.place(x=385, y=5)
+
+    # Título de la sección dentro de la ventana
+    lbl_titulo = tk.Label(top, text="REGISTRO DE USUARIO", font=("Arial", 14, "bold"),
+                          bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    lbl_titulo.place(x=100, y=35)
+
+    # Componentes para ingresar el Usuario
+    lbl_usuario = tk.Label(top, text="Usuario:", font=("Arial", 11, "bold"),
+                           bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    lbl_usuario.place(x=50, y=100)
+    
+    ent_usuario = tk.Entry(top, font=("Arial", 11), width=22)
+    ent_usuario.place(x=160, y=100)
+
+    # Componentes para ingresar la Contraseña
+    lbl_contrasena = tk.Label(top, text="Contraseña:", font=("Arial", 11, "bold"),
+                              bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    lbl_contrasena.place(x=50, y=150)
+    
+    ent_contrasena = tk.Entry(top, font=("Arial", 11), width=22, show="*") 
+    ent_contrasena.place(x=160, y=150)
+
+    # Función interna encargada de ejecutar el registro conectando la UI con las clases
+    def ejecutar_registro():
+        nombre = ent_usuario.get().strip()
+        contra = ent_contrasena.get().strip()
+        
+        if nombre == "" or contra == "":
+            messagebox.showwarning("Campos Vacíos", "Por favor, complete todos los campos.")
+            return
+            
+        # Llamada directa al método de tu clase RegistroUsuarios
+        exito = gestor_usuarios.crear_usuario(nombre, contra)
+        
+        if exito:
+            messagebox.showinfo("Éxito", f"¡Usuario '{nombre}' registrado correctamente!")
+            ent_usuario.delete(0, tk.END) # Limpia la caja de texto
+            ent_contrasena.delete(0, tk.END) # Limpia la caja de texto
+        else:
+            messagebox.showerror("Error", "Este nombre de usuario ya se encuentra registrado.")
+
+    # Botón gráfico para enviar el registro
+    btn_registrar = tk.Button(top, text="Registrar Cuenta", font=("Arial", 11, "bold"),
+                              bg=faccion_actual.botones, fg=faccion_actual.texto_boton,
+                              command=ejecutar_registro, width=18, height=1)
+    btn_registrar.place(x=130, y=220)
     
     top.protocol("WM_DELETE_WINDOW", cerrar_root) # Para que se ejecute cerrar_root al presionar la X original de la ventana también
 
