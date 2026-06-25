@@ -5,15 +5,15 @@ import pygame
 import json
 
 #CLASE DE FACCIONES
-class Facciones:
+class Facciones: #Molde para crear objetos tipo facción 
     def __init__(self, nombre, fondo_menu, botones, texto_boton, cancion):
-        self.nombre = nombre
+        self.nombre = nombre  # guarda características individuales dentro del objeto para que no se pierdan
         self.fondo_menu = fondo_menu
         self.botones = botones
         self.texto_boton = texto_boton
         self.cancion = cancion
 
-#3 instancias de la clase y las guardamos en una lista
+#3 instancias de la clase en lista que almacenan las 3 facciones disponibles
 lista_facciones = [
     Facciones("Medieval", "#360857", "#88743F", "white", "Medieval.mp3"),
     Facciones("Futurista", "#0F172A", "#06B6D4", "white", "Futurista.mp3"),
@@ -21,22 +21,22 @@ lista_facciones = [
 ]
 
 #Variables globales para rastrear el estado actual
-faccion_actual = lista_facciones[0]  # Empieza con la medieval
-ventana_actual = None
-musica_activa = False #si la musica está en ON u Off
+faccion_actual = lista_facciones[0]  # Define con cuál facción se empieza por defecto, empieza con medieval
+ventana_actual = None #Para recordar cuál ventana secundaria está abierta, empieza vacía
+musica_activa = False #Si la musica está en ON u Off
 
 
 
-#Función para cambiar el tema visual
+#Función para cambiar el tema visual, se activa cuando el usuario elige una opción diferente en el menú de facciones
 def cambiar_faccion(nombre_seleccionado):
-    global faccion_actual,musica_activa
-    for faccion in lista_facciones:
-        if faccion.nombre == nombre_seleccionado: 
-            faccion_actual = faccion
-            break
+    global faccion_actual,musica_activa # Avisa que va a cambiar las variables
+    for faccion in lista_facciones: # Recorre lista de facciones una por una
+        if faccion.nombre == nombre_seleccionado: #Si el nombre de la lista coincide con el seleccionado, guarda el objeto en faccion_actual
+            faccion_actual = faccion                 
+            break                   #Detiene el ciclo con break
             
     # Extraer y aplicar los nuevos colores
-    main_frame.config(bg=faccion_actual.fondo_menu)
+    main_frame.config(bg=faccion_actual.fondo_menu) # Redibuja visualmente el menú principal cada que se cambia de faccion
     Boton1.config(bg=faccion_actual.botones, fg=faccion_actual.texto_boton)
     Boton2.config(bg=faccion_actual.botones, fg=faccion_actual.texto_boton)
     Boton3.config(bg=faccion_actual.botones, fg=faccion_actual.texto_boton)
@@ -46,24 +46,25 @@ def cambiar_faccion(nombre_seleccionado):
 
 
     # 2. Control de cambio de música
-    if musica_activa:
+    if musica_activa: #Si la musica esta activa, la cambia automáticamente
         try:
             pygame.mixer.music.stop() # Detiene la canción de la facción anterior
             pygame.mixer.music.load(faccion_actual.cancion) # Carga la canción de la nueva facción
             pygame.mixer.music.play(-1) # La reproduce en bucle infinito
-        except pygame.error:
+        except pygame.error: # Si al cargar el sonido hay un problema con el archivo,
+                             # muestra un aviso para evitar que se cierre el juego por completo
             print(f"No se pudo cargar el archivo de audio: {faccion_actual.cancion}")
 
 
 #Funciones de control de ventanas
-def cerrar_root():
+def cerrar_root(): # Se ejecuta cuando se pulsa la X de alguna ventana secundaria
     global ventana_actual
-    if ventana_actual is not None and ventana_actual.winfo_exists():
-        ventana_actual.destroy()
-    ventana.deiconify()
+    if ventana_actual is not None and ventana_actual.winfo_exists(): # Verifica si la ventana secundaria está abierta
+        ventana_actual.destroy() # Cierra la ventana abierta
+    ventana.deiconify() # Hace que la ventana del menú principal reaparezca
 
-def salir_del_juego():
-    ventana.destroy()
+def salir_del_juego(): # Se ejecuta al presionar la X del menú primcipal
+    ventana.destroy() # Cierra por completo el juego
 
 
 # Ventana principal (Menú)
