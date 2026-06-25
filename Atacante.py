@@ -1,19 +1,16 @@
 import time
 
 "ESTADO DE TORRES"
-class Enemigo: #Sirve para representar al enemigo que se ataca
-
-    'Atributos'
+class EstadoTorre: #Sirve para representar 
     def __init__(self, vida):
         self.vida = vida
-        self.congelada = False #Enemigo inicialmente no está congelado
+        self.congelada = False
     
-    'Métodos'
-    def recibir_dano(self, dano): #Función sobre el enemigo que sufrirá daño por la torre
-        self.vida -= dano #Se le quita vida al enemigo según la cantidad de daño que cause la torre
+    def recibir_dano(self, dano):
+        self.vida -= dano
     
-    def congelar(self): #Función para congelar
-        self.congelada = True #El enemigo se encuentra congelado
+    def congelar(self):
+        self.congelada = True
 
 "CLASE BASE DE TORRES"
 class Torres:
@@ -39,8 +36,8 @@ class Torres:
             return True #La distancia es menor o igual al alcance de la torre, así que se ataca
         return False #La distancia es mayor, no cumple la condición
     
-    def ataque(self, enemigo): #Daño que ejerce al enemigo
-        enemigo.recibir_dano(self.dano) #Llama a la función que recibe el objetivo
+    def ataque(self, estadotorre): #Daño que ejerce al enemigo
+        estadotorre.recibir_dano(self.dano) #Llama a la función que recibe el objetivo
     
     def habilidad_disponible(self): #Función para saber si ya es posible utilizar la habilidad
         tiempo_ahora = time.time() #Ofrece el tiempo actual en segundos
@@ -69,10 +66,10 @@ class TorreBasica(Torres): #Subclase con el tipo de torre, con el "Torres" dentr
             5 #Tiempo de recarga
         )
     
-    def habilidad_especial(self, enemigo): #Habilidad especial de la torre
+    def habilidad_especial(self, estadotorre): #Habilidad especial de la torre
         if self.habilidad_disponible(): #Condición si ha pasado el tiempo suficiente
-            enemigo.recibir_dano(self.dano) #Hace daño dos veces por el doble disparo
-            enemigo.recibir_dano(self.dano)
+            estadotorre.recibir_dano(self.dano) #Hace daño dos veces por el doble disparo
+            estadotorre.recibir_dano(self.dano)
 
             self.recarga = time.time() #Regresa al tiempo pasado
 
@@ -87,9 +84,9 @@ class TorrePesada(Torres):
             12
         )
     
-    def habilidad_especial(self, enemigo):
+    def habilidad_especial(self, estadotorre):
         if self.habilidad_disponible():
-            enemigo.recibir_dano(self.dano * 2) #El daño se duplica
+            estadotorre.recibir_dano(self.dano * 2) #El daño se duplica
 
             self.recarga = time.time()
     
@@ -104,9 +101,9 @@ class TorreMagica(Torres):
             5
         )
     
-    def habilidad_especial(self, enemigo):
+    def habilidad_especial(self, estadotorre):
         if self.habilidad_disponible():
-            enemigo.congelar() #Llama la función congelar y la vuelve True
+            estadotorre.congelar() #Llama la función congelar y la vuelve True
 
             self.recarga = time.time()
 
@@ -116,13 +113,10 @@ class Defensor: #Clase que representa a quien defiende
         self.dinero = 300 #Dinero inicial
         self.torres = [] #Lista donde se guardarán las torres que compre
     
-    def comprar_torres(self, torres): #Función para poder comprar torres
-        if self.dinero >= torres.costo: #Condición que el dinero debe ser igual o mayor al costo de la torre
-            self.dinero -= torres.costo #Si se cumple la función, se resta el dinero del jugador con el costo de la torre
-            self.torres.append(torres) #Concatenación para guardar torre comprada en la lista
+    def comprar_torres(self, torre): #Función para poder comprar torres
+        if self.dinero >= torre.costo: #Condición que el dinero debe ser igual o mayor al costo de la torre
+            self.dinero -= torre.costo #Si se cumple la función, se resta el dinero del jugador con el costo de la torre
+            self.torres.append(torre) #Concatenación para guardar torre comprada en la lista
 
             return True #Sí sucedió la compra
         return False #No cumplió la condición, así que no sucedió la compra
-    
-    def ganar_dinero(self, ganancias): #Función para determinar la nueva cantidad de ganancias
-        self.dinero += ganancias #Se agregan las ganancias al dinero ya establecido
