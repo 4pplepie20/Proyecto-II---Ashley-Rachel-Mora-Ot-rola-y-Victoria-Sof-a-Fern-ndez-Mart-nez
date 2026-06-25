@@ -1,3 +1,5 @@
+import json
+
 "DATOS DE USUARIO"
 class Usuario: #Clase encargada de obtener todos los datos necesarios de una cuenta de usuario
 
@@ -13,7 +15,7 @@ class Usuario: #Clase encargada de obtener todos los datos necesarios de una cue
         return self.usuario #El return hace que se muestre el dato
     
     def obtener_contrasena(self): #Obtiene contraseña
-        return self.obtener_contrasena
+        return self.contrasena
     
     def obtener_victorias_atacante(self): #Obtiene la cantidad de victorias actuales como atacante
         return self.victorias_atacante 
@@ -28,7 +30,7 @@ class Usuario: #Clase encargada de obtener todos los datos necesarios de una cue
         self.victorias_defensor += 1
     
 "GESTIONADOR DE TODOS LOS USUARIOS Y GUARDADO"
-class RegitroUsuarios: #Encargada de registrar todos los usuarios y guardar sus datos
+class RegistroUsuarios: #Encargada de registrar todos los usuarios y guardar sus datos
 
     'Atributos'
     def __init__(self):
