@@ -4,7 +4,9 @@ from PIL import Image, ImageTk
 import pygame
 import json
 from RegistroyCuenta import RegistroUsuarios
+from Puntajes import LogicaPuntajes
 gestor_usuarios = RegistroUsuarios ()
+controlador_puntajes = LogicaPuntajes(gestor_usuarios) 
 
 #CLASE DE FACCIONES
 class Facciones: #Molde para crear objetos tipo facción 
@@ -257,18 +259,115 @@ def click3(): #PARA ABRIR EL PUNTAJE
     global ventana_actual # Para saber cual ventana está activa
     ventana.withdraw() # Oculta la ventana principal
     
-    top = tk.Toplevel(ventana) # Crea la ventana secundaria "Puntaje"
-    top.title("Puntaje")
-    top.geometry("420x280")
-    top.config(bg=faccion_actual.fondo_menu) # Aplica la faccion 
-    ventana_actual = top # Para saber que pantalla está abierta
+    top_puntajes = tk.Toplevel(ventana) # Crea la ventana secundaria "Puntaje"
+    top_puntajes.title("Ranking de Puntajes")
+    top_puntajes.geometry("450x400")
+    top_puntajes.config(bg=faccion_actual.fondo_menu) # Aplica la faccion 
+    ventana_actual = top_puntajes # Para saber que pantalla está abierta
     
-    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), # Crea boton de X en ventana secundaria "Puntaje"
+    boton_cerrado = tk.Button(top_puntajes, text='X', font=("Arial", 10, "bold"), # Crea boton de X en ventana secundaria "Puntaje"
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)
     boton_cerrado.place(x=385, y=5)
-    
-    top.protocol("WM_DELETE_WINDOW", cerrar_root) # Para pode usar la X principal de la ventana
 
+    # Título Principal
+    lbl_titulo = tk.Label(top_puntajes, text="PUNTAJES Y RANKINGS", font=("Arial", 14, "bold"),
+                          bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    lbl_titulo.place(x=110, y=40)
+    
+    lbl_subtitulo = tk.Label(top_puntajes, text="Selecciona la categoría que deseas visualizar:", font=("Arial", 10, "italic"),
+                             bg=faccion_actual.fondo_menu, fg="gray")
+    lbl_subtitulo.place(x=90, y=80)
+
+    # Función interna para mostrar el desglose individual de un jugador al darle click a su nombre
+    def mostrar_detalles(usuario_objeto):
+        nombre = usuario_objeto.obtener_nombre()
+        atacante = usuario_objeto.obtener_victorias_atacante()
+        defensor = usuario_objeto.obtener_victorias_defensor()
+        total = atacante + defensor
+        
+        mensaje = (f"Usuario: {nombre}\n\n"
+                   f"⚔️ Victorias Atacante: {atacante}\n"
+                   f"🛡️ Victorias Defensor: {defensor}\n\n"
+                   f"⭐ Puntaje Total: {total}")
+        messagebox.showinfo("Detalles del Jugador", mensaje)
+
+    # Función interna genérica que construye las subventanas de las listas
+    def abrir_sub_ranking(titulo_categoria, lista_ordenada, tipo_puntos):
+        top_puntajes.withdraw()
+        # Creamos la sub-subventana del ranking específico
+        sub_top = tk.Toplevel(top_puntajes)
+        sub_top.title(f"Ranking - {titulo_categoria}")
+        sub_top.geometry("450x400")
+        sub_top.config(bg=faccion_actual.fondo_menu)
+        
+        # Botón para cerrar ÚNICAMENTE esta subventana y regresar al menú de puntajes
+        btn_regresar = tk.Button(sub_top, text='X', font=("Arial", 10, "bold"), 
+                                 bg=faccion_actual.botones, fg=faccion_actual.texto_boton, 
+                                 command=sub_top.destroy)
+        btn_regresar.place(x=415, y=5)
+        
+        lbl_tit_sub = tk.Label(sub_top, text=titulo_categoria, font=("Arial", 14, "bold"),
+                               bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+        lbl_tit_sub.place(x=130, y=30)
+        
+        lbl_ayuda = tk.Label(sub_top, text="(Haz click en el nombre para ver su historial completo)", font=("Arial", 9, "italic"),
+                             bg=faccion_actual.fondo_menu, fg="gray")
+        lbl_ayuda.place(x=80, y=60)
+
+        coordenada_y = 110
+        posicion = 1
+        
+        if not lista_ordenada:
+            lbl_vacio = tk.Label(sub_top, text="No hay registros disponibles.", font=("Arial", 11),
+                                 bg=faccion_actual.fondo_menu, fg="white")
+            lbl_vacio.place(x=130, y=160)
+            
+        for usuario in lista_ordenada:
+            # Selecciona qué puntaje imprimir a la par del nombre según el botón oprimido
+            if tipo_puntos == "general":
+                puntos = usuario.obtener_victorias_atacante() + usuario.obtener_victorias_defensor()
+            elif tipo_puntos == "atacante":
+                puntos = usuario.obtener_victorias_atacante()
+            else:
+                puntos = usuario.obtener_victorias_defensor()
+                
+            texto_puesto = f"{posicion}º  -   Puntos: {puntos}"
+            lbl_puesto = tk.Label(sub_top, text=texto_puesto, font=("Arial", 11),
+                                  bg=faccion_actual.fondo_menu, fg="white")
+            lbl_puesto.place(x=240, y=coordenada_y)
+
+            btn_nombre = tk.Button(sub_top, text=usuario.obtener_nombre(), font=("Arial", 11, "bold", "underline"),
+                                   bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton,
+                                   activebackground=faccion_actual.fondo_menu, activeforeground="gray",
+                                   bd=0, command=lambda u=usuario: mostrar_detalles(u))
+            btn_nombre.place(x=60, y=coordenada_y)
+
+            coordenada_y += 40
+            posicion += 1
+            if posicion > 6:
+                break
+
+    # --- BOTONES DE SELECCIÓN EN EL MENÚ DE PUNTAJES ---
+    
+    # 1. Botón para Ranking General
+    btn_general = tk.Button(top_puntajes, text="🏆 Ranking General", font=("Arial", 12, "bold"),
+                            bg=faccion_actual.botones, fg=faccion_actual.texto_boton, width=25, height=2,
+                            command=lambda: abrir_sub_ranking("RANKING GENERAL", controlador_puntajes.obtener_ranking_general(), "general"))
+    btn_general.place(x=100, y=140)
+
+    # 2. Botón para Ranking Atacante
+    btn_atacante = tk.Button(top_puntajes, text="⚔️ Ranking Atacantes", font=("Arial", 12, "bold"),
+                             bg=faccion_actual.botones, fg=faccion_actual.texto_boton, width=25, height=2,
+                             command=lambda: abrir_sub_ranking("RANKING ATACANTES", controlador_puntajes.obtener_ranking_atacante(), "atacante"))
+    btn_atacante.place(x=100, y=210)
+
+    # 3. Botón para Ranking Defensor
+    btn_defensor = tk.Button(top_puntajes, text="🛡️ Ranking Defensores", font=("Arial", 12, "bold"),
+                             bg=faccion_actual.botones, fg=faccion_actual.texto_boton, width=25, height=2,
+                             command=lambda: abrir_sub_ranking("RANKING DEFENSORES", controlador_puntajes.obtener_ranking_defensor(), "defensor"))
+    btn_defensor.place(x=100, y=280)
+
+    top_puntajes.protocol("WM_DELETE_WINDOW", cerrar_root)
 
 #Botones ventana principal
 
