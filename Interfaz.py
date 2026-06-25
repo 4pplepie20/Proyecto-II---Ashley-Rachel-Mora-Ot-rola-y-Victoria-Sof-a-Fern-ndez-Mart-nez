@@ -100,7 +100,7 @@ selector_faccion.config(font=("Arial", 10), bg="#FFFFFF")
 selector_faccion.place(x=170, y=12) 
 
 
-#Funciones para abrir ventanas secundarias y cambio de facción
+#Funciones para abrir ventanas secundarias
 def click1():#PARA ABRIR EL REGISTRO
     global ventana_actual # Avisa que va a cambiar la variable para ver cual ventana secundaria está activa
     ventana.withdraw() # Para ocultar la ventana principal
@@ -115,53 +115,127 @@ def click1():#PARA ABRIR EL REGISTRO
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)
     boton_cerrado.place(x=385, y=5)
 
-    # Título de la sección dentro de la ventana
-    lbl_titulo = tk.Label(top, text="REGISTRO DE USUARIO", font=("Arial", 14, "bold"),
-                          bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    
+    lbl_titulo = tk.Label(top, text="REGISTRO DE USUARIO", font=("Arial", 14, "bold"), # Enunciado dentro de la ventana con etiqueta
+                          bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton) # de fondo se escoge las características de la faccion actual
     lbl_titulo.place(x=100, y=35)
 
-    # Componentes para ingresar el Usuario
-    lbl_usuario = tk.Label(top, text="Usuario:", font=("Arial", 11, "bold"),
-                           bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    
+    lbl_usuario = tk.Label(top, text="Usuario:", font=("Arial", 11, "bold"), # Etiqueta que indica donde ingresar el usuario
+                           bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton) # fondo de la faccion actual
     lbl_usuario.place(x=50, y=100)
     
-    ent_usuario = tk.Entry(top, font=("Arial", 11), width=22)
+    ent_usuario = tk.Entry(top, font=("Arial", 11), width=22) # Para ingresar el usuario
     ent_usuario.place(x=160, y=100)
 
     # Componentes para ingresar la Contraseña
-    lbl_contrasena = tk.Label(top, text="Contraseña:", font=("Arial", 11, "bold"),
-                              bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    lbl_contrasena = tk.Label(top, text="Contraseña:", font=("Arial", 11, "bold"), # Etiqueta que indica donde ingresar la contraseña
+                              bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)# temática de la facción seleccionada
     lbl_contrasena.place(x=50, y=150)
     
-    ent_contrasena = tk.Entry(top, font=("Arial", 11), width=22, show="*") 
+    ent_contrasena = tk.Entry(top, font=("Arial", 11), width=22, show="*") # Para ingresar la contraseña, show=** hace que censure la contraseña
     ent_contrasena.place(x=160, y=150)
 
-    # Función interna encargada de ejecutar el registro conectando la UI con las clases
+    # Función interna encargada de ejecutar el registro conectando la interfaz con las clases
     def ejecutar_registro():
         nombre = ent_usuario.get().strip()
         contra = ent_contrasena.get().strip()
         
-        if nombre == "" or contra == "":
+        if nombre == "" or contra == "": # Si el usario no ingresa nada sale un mensaje para que complete el campo
             messagebox.showwarning("Campos Vacíos", "Por favor, complete todos los campos.")
             return
             
-        # Llamada directa al método de tu clase RegistroUsuarios
-        exito = gestor_usuarios.crear_usuario(nombre, contra)
+        exito = gestor_usuarios.crear_usuario(nombre, contra) # Llamada directa al método de la clase RegistroUsuarios
         
-        if exito:
-            messagebox.showinfo("Éxito", f"¡Usuario '{nombre}' registrado correctamente!")
+        if exito: # Si el usuario logra registrarse sale un mensaje de comprobación
+            messagebox.showinfo("Éxito", f"¡Usuario '{nombre}' registrado correctamente!") 
             ent_usuario.delete(0, tk.END) # Limpia la caja de texto
             ent_contrasena.delete(0, tk.END) # Limpia la caja de texto
         else:
-            messagebox.showerror("Error", "Este nombre de usuario ya se encuentra registrado.")
+            messagebox.showerror("Error", "Este nombre de usuario ya se encuentra registrado.") # Si el usuario pone un nombre ya registrado sale un mensaje de advertencia
 
-    # Botón gráfico para enviar el registro
+    # Boton para registrar cuenta
     btn_registrar = tk.Button(top, text="Registrar Cuenta", font=("Arial", 11, "bold"),
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton,
-                              command=ejecutar_registro, width=18, height=1)
-    btn_registrar.place(x=130, y=220)
+                              command=ejecutar_registro, width=18, height=1)# Al presionar el boton se ejecuta la funcion ejecutar_registro
+    btn_registrar.place(x=130, y=200)
+
+    btn_ir_a_login = tk.Button(top, text="¿Ya tienes cuenta? Inicia Sesión", font=("Arial", 10, "underline"), # Botón para iniciar sesion si ya el usuario tiene una cuenta
+                                 bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton,
+                                 activebackground=faccion_actual.fondo_menu, activeforeground="gray",
+                                 bd=0, command=abrir_login) # Ejecuta la función de abajo
+    btn_ir_a_login.place(x=115, y=235)
     
     top.protocol("WM_DELETE_WINDOW", cerrar_root) # Para que se ejecute cerrar_root al presionar la X original de la ventana también
+
+def abrir_login():
+    global ventana_actual # Variable que se va a cambiar en la funcion
+    
+    # Si la ventana de registro estaba abierta (que lo está), la destruimos primero
+    if ventana_actual is not None and ventana_actual.winfo_exists(): 
+        ventana_actual.destroy()
+        
+    # Se crea la subventana de Login que sale de la ventana registro
+    top_login = tk.Toplevel(ventana)
+    top_login.title("Iniciar Sesión")
+    top_login.geometry("420x330")
+    top_login.config(bg=faccion_actual.fondo_menu) # El fondo es la faccion seleccionada
+    ventana_actual = top_login # Reasigna la ventana activa actual
+    
+    # Botón de X para cerrar la ventana Iniciar Sesion
+    boton_cerrado = tk.Button(top_login, text='X', font=("Arial", 10, "bold"), 
+                              bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)# Al presionar el boton se ejecuta cerrar_root
+    boton_cerrado.place(x=385, y=5)
+
+    lbl_titulo = tk.Label(top_login, text="INICIO DE SESIÓN", font=("Arial", 14, "bold"), # Etiqueta de la ventana inicio de sesion
+                          bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton) # el fondo el la faccion actual
+    lbl_titulo.place(x=130, y=35)
+
+    lbl_usuario = tk.Label(top_login, text="Usuario:", font=("Arial", 11, "bold"), # Etiqueta que indica donde poner el usuario
+                           bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton) 
+    lbl_usuario.place(x=50, y=100)
+    
+    ent_usuario = tk.Entry(top_login, font=("Arial", 11), width=22) # Espacio para ingresar el usuario
+    ent_usuario.place(x=160, y=100)
+
+    lbl_contrasena = tk.Label(top_login, text="Contraseña:", font=("Arial", 11, "bold"), # Etiqueta que indica donde ingresar la contraseña
+                              bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    lbl_contrasena.place(x=50, y=150)
+    
+    ent_contrasena = tk.Entry(top_login, font=("Arial", 11), width=22, show="*") # Espacio para ingresar la contraseña, el show ="*" censura la contraseña
+    ent_contrasena.place(x=160, y=150)
+
+    # Ejecución de la validación del Login
+    def ejecutar_login():
+        nombre = ent_usuario.get().strip() # Extrae el texto ingresado
+        contra = ent_contrasena.get().strip() # Extrae el texto ingresado
+        
+        if nombre == "" or contra == "": # si lee un str vacío muestra mensaje de error para que se complete el campo
+            messagebox.showwarning("Campos Vacíos", "Por favor, complete todos los campos.")
+            return
+        usuario_logeado = gestor_usuarios.iniciar_sesion(nombre, contra) # llama al método iniciar_sesion del objeto global gestor_usuarios y le pasa los datos recolectados
+        
+        if usuario_logeado is not None: # Si el login fue exitoso
+            messagebox.showinfo("Éxito", f"¡Bienvenido de vuelta, {usuario_logeado.obtener_nombre()}!") #Mostrar mensaje
+            # Al logearse con éxito, cerramos la subventana y volvemos al menú principal
+            cerrar_root() 
+        else:
+            messagebox.showerror("Error", "Usuario o contraseña incorrectos.") # si algo falla, mostrar emnsaje de error
+
+    # Botón para ingresar
+    btn_ingresar = tk.Button(top_login, text="Ingresar", font=("Arial", 11, "bold"),
+                              bg=faccion_actual.botones, fg=faccion_actual.texto_boton,
+                              command=ejecutar_login, width=18, height=1) #El boton corre la funcion ejecutar_login
+    btn_ingresar.place(x=120, y=210)
+    
+    # Botón para regresar al registro si cambió de opinión
+    btn_volver_registro = tk.Button(top_login, text="¿No tienes cuenta? Regístrate", font=("Arial", 10, "underline"),# texto para el que no tiene cuenta
+                                     bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton, # fonfo es la faccion actual
+                                     activebackground=faccion_actual.fondo_menu, activeforeground="gray",
+                                     bd=0, command=click1) # El boton corre la funcion click1
+    btn_volver_registro.place(x=115, y=270)
+    top_login.protocol("WM_DELETE_WINDOW", cerrar_root)
+
 
 def click2(): #PARA ABRIR EL JUEGO
     global ventana_actual # Aviso de cambio de variable para saber cual ventana está activa
