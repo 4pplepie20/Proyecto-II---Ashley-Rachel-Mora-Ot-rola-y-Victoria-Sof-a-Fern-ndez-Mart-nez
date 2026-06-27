@@ -5,6 +5,8 @@ import pygame
 import json
 from RegistroyCuenta import RegistroUsuarios
 from Puntajes import LogicaPuntajes
+from Torres import Defensor
+from ComponentesJuego import TableroJuego
 gestor_usuarios = RegistroUsuarios ()
 controlador_puntajes = LogicaPuntajes(gestor_usuarios) 
 
@@ -239,21 +241,155 @@ def abrir_login():
     top_login.protocol("WM_DELETE_WINDOW", cerrar_root)
 
 
-def click2(): #PARA ABRIR EL JUEGO
-    global ventana_actual # Aviso de cambio de variable para saber cual ventana está activa
-    ventana.withdraw() # Oculta la ventana principal
-    
-    top = tk.Toplevel(ventana) # Crea la ventana secundaria "Juego"
-    top.title("Juego")
-    top.geometry("600x420")
-    top.config(bg=faccion_actual.fondo_menu) #Aplica la faccion elegida
-    ventana_actual = top # Para saber cuál pantalla tine abrierta el usuario
-    
-    boton_cerrado = tk.Button(top, text='X', font=("Arial", 10, "bold"), # Crea botón X en ventana secundaria "Juego"
+def click2(): # ABRIR FASE DE PREPARACIÓN Y CONFIGURACIÓN DE PARTIDA
+    global ventana_actual
+    ventana.withdraw() # Oculta temporalmente el menú de inicio principal
+
+    # Variables de control de Tkinter para capturar las facciones seleccionadas sin colisionar
+    faccion_jugador1 = tk.StringVar(value=None)
+    faccion_jugador2 = tk.StringVar(value=None)
+
+    # Creamos la ventana secundaria dedicada al juego principal
+    top_juego = tk.Toplevel(ventana)
+    top_juego.title("Configuración de Partida")
+    top_juego.geometry("650x750") # Ajustamos el tamaño ideal para contener cómodamente el mapa de 10x10
+    top_juego.config(bg=faccion_actual.fondo_menu)
+    ventana_actual = top_juego
+
+    # Contenedor gráfico principal para organizar los botones de votación de facciones
+    marco_seleccion = tk.Frame(top_juego, bg=faccion_actual.fondo_menu)
+    marco_seleccion.pack(fill=tk.BOTH, expand=True, pady=40)
+
+    # Botón X de cierre absoluto colocado en la esquina superior derecha
+    boton_cerrado = tk.Button(top_juego, text='X', font=("Arial", 10, "bold"),
                               bg=faccion_actual.botones, fg=faccion_actual.texto_boton, command=cerrar_root)
-    boton_cerrado.place(x=565, y=5)
+    boton_cerrado.place(x=615, y=5)
+
+    lbl_titulo_prep = tk.Label(marco_seleccion, text="FASE DE SELECCIÓN DE FACCIONES",
+                               font=("Arial", 14, "bold"), bg=faccion_actual.fondo_menu, fg=faccion_actual.texto_boton)
+    lbl_titulo_prep.pack(pady=10)
+
+    # --- SECCIÓN SELECCIÓN JUGADOR 1 (DEFENSOR) ---
+    lbl_j1 = tk.Label(marco_seleccion, text="Jugador 1 (Defensor) elige su facción:", font=("Arial", 11, "bold"),
+                      bg=faccion_actual.fondo_menu, fg="white")
+    lbl_j1.pack(pady=(20, 5))
+
+    marco_botones_j1 = tk.Frame(marco_seleccion, bg=faccion_actual.fondo_menu)
+    marco_botones_j1.pack()
+
+    # Listas paralelas lineales en vez de diccionarios para manejar los estilos dinámicos de selección
+    nombres_botones_j1 = []
+    componentes_botones_j1 = []
+
+    def seleccionar_j1(nombre_facc):
+        faccion_jugador1.set(nombre_facc)
+        # Evaluamos por índice para hundir el botón seleccionado y restablecer los otros
+        for i in range(len(nombres_botones_j1)):
+            if nombres_botones_j1[i] == nombre_facc:
+                componentes_botones_j1[i].config(relief="sunken", bd=4, bg="#C3D12B")
+            else:
+                componentes_botones_j1[i].config(relief="raised", bd=2, bg=faccion_actual.botones)
+
+    for facc in lista_facciones:
+        btn = tk.Button(marco_botones_j1, text=facc.nombre, font=("Arial", 10, "bold"),
+                        bg=faccion_actual.botones, fg=faccion_actual.texto_boton, width=12,
+                        command=lambda f=facc.nombre: seleccionar_j1(f))
+        btn.pack(side=tk.LEFT, padx=10)
+        
+        nombres_botones_j1.append(facc.nombre)
+        componentes_botones_j1.append(btn)
+
+    # --- SECCIÓN SELECCIÓN JUGADOR 2 (ATACANTE) ---
+    lbl_j2 = tk.Label(marco_seleccion, text="Jugador 2 (Atacante) elige su facción:", font=("Arial", 11, "bold"),
+                      bg=faccion_actual.fondo_menu, fg="white")
+    lbl_j2.pack(pady=(30, 5))
+
+    marco_botones_j2 = tk.Frame(marco_seleccion, bg=faccion_actual.fondo_menu)
+    marco_botones_j2.pack()
+
+    nombres_botones_j2 = []
+    componentes_botones_j2 = []
+
+    def seleccionar_j2(nombre_facc):
+        faccion_jugador2.set(nombre_facc)
+        for i in range(len(nombres_botones_j2)):
+            if nombres_botones_j2[i] == nombre_facc:
+                componentes_botones_j2[i].config(relief="sunken", bd=4, bg="#C3D12B")
+            else:
+                componentes_botones_j2[i].config(relief="raised", bd=2, bg=faccion_actual.botones)
+
+    for facc in lista_facciones:
+        btn = tk.Button(marco_botones_j2, text=facc.nombre, font=("Arial", 10, "bold"),
+                        bg=faccion_actual.botones, fg=faccion_actual.texto_boton, width=12,
+                        command=lambda f=facc.nombre: seleccionar_j2(f))
+        btn.pack(side=tk.LEFT, padx=10)
+        
+        nombres_botones_j2.append(facc.nombre)
+        componentes_botones_j2.append(btn)
+
+    # --- SUBFUNCIÓN INTERNA DE COMPROBACIÓN E INICIO DEL MAPA INTERACTIVO ---
+    def confirmar_y_jugar():
+        facc1 = faccion_jugador1.get()
+        facc2 = faccion_jugador2.get()
+
+        # Validación 1: Evitar avanzar si alguna de las selecciones está vacía
+        if facc1 == 'None' or facc2 == 'None' or not facc1 or not facc2:
+            messagebox.showwarning("Faltan Facciones", "Ambos jugadores deben seleccionar una facción antes de continuar.")
+            return
+        
+        # Validación 2: Regla obligatoria de juego para impedir facciones idénticas
+        if facc1 == facc2:
+            messagebox.showerror("Facciones Iguales", "¡No pueden seleccionar la misma facción! Cada jugador debe usar una diferente.")
+            return
+
+        # Ocultamos por completo el marco que contenía la sección de votación
+        marco_seleccion.pack_forget()
+
+        # Buscamos los dos objetos tipo Facciones correspondientes en la lista global
+        faccion_defensora = None
+        faccion_atacante = None
+        for f in lista_facciones:
+            if f.nombre == facc1:
+                faccion_defensora = f
+            if f.nombre == facc2:
+                faccion_atacante = f
+
+        # Ajustamos el fondo y título de la ventana principal según la estética del defensor
+        top_juego.config(bg=faccion_defensora.fondo_menu)
+        top_juego.title(f"Partida: {facc1} (Defensor) vs {facc2} (Atacante)")
+
+        # Título decorativo de la partida en curso
+        lbl_titulo_juego = tk.Label(top_juego, text=f"PARTIDA EN CURSO: {facc1.upper()} VS {facc2.upper()}", 
+                                    font=("Arial", 14, "bold"), bg=faccion_defensora.fondo_menu, fg=faccion_defensora.texto_boton)
+        lbl_titulo_juego.pack(pady=(15, 5))
+
+        # Inicializamos el objeto de control lógico del defensor (dinero, lista de torres)
+        defensor_partida = Defensor()
+        
+        # --- INSTANCIACIÓN ORDENADA DEL TABLERO ---
+        # Enviamos los 4 argumentos limpios requeridos por ComponentesJuego.py
+        mapa_interactivo = TableroJuego(top_juego, faccion_defensora, faccion_atacante, defensor_partida)
+        
+        # --- SOLUCIÓN AL ERROR VISUAL ---
+        # Creamos un contenedor inferior separado exclusivamente para el botón de salida. 
+        # Esto previene que interfiera con los cálculos de empaquetado del marco del tablero.
+        marco_inferior = tk.Frame(top_juego, bg=faccion_defensora.fondo_menu)
+        marco_inferior.pack(fill=tk.X, side=tk.BOTTOM, pady=15)
+
+        btn_regresar_menu = tk.Button(marco_inferior, text="Volver al Menú Principal", font=("Arial", 11, "bold"),
+                                      bg=faccion_defensora.botones, fg=faccion_defensora.texto_boton,
+                                      command=cerrar_root, width=22, height=1)
+        btn_regresar_menu.pack()
+
+    # Botón principal para confirmar la selección, enlazado directamente a la subfunción superior
+    btn_confirmar = tk.Button(marco_seleccion, text="⚔️ Iniciar Partida ⚔️", font=("Arial", 12, "bold"),
+                             bg=faccion_actual.botones, fg=faccion_actual.texto_boton, width=20, height=2,
+                             command=confirmar_y_jugar)
+    btn_confirmar.pack(pady=40)
     
-    top.protocol("WM_DELETE_WINDOW", cerrar_root) # Para que se pueda usar la X principal de la ventana tambien
+    top_juego.protocol("WM_DELETE_WINDOW", cerrar_root)
+    
+   
 
 def click3(): #PARA ABRIR EL PUNTAJE
     global ventana_actual # Para saber cual ventana está activa
@@ -286,9 +422,9 @@ def click3(): #PARA ABRIR EL PUNTAJE
         total = atacante + defensor
         
         mensaje = (f"Usuario: {nombre}\n\n"
-                   f"⚔️ Victorias Atacante: {atacante}\n"
-                   f"🛡️ Victorias Defensor: {defensor}\n\n"
-                   f"⭐ Puntaje Total: {total}")
+                   f" Victorias Atacante: {atacante}\n"
+                   f" Victorias Defensor: {defensor}\n\n"
+                   f" Puntaje Total: {total}")
         messagebox.showinfo("Detalles del Jugador", mensaje)
 
     # Función interna genérica que construye las subventanas de las listas
