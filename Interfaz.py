@@ -252,7 +252,7 @@ def click2(): # ABRIR FASE DE PREPARACIÓN Y CONFIGURACIÓN DE PARTIDA
     # Creamos la ventana secundaria dedicada a la preparación del juego
     top_juego = tk.Toplevel(ventana)
     top_juego.title("Configuración de Partida")
-    top_juego.geometry("650x500") # Ajustamos el tamaño ideal para contener cómodamente el mapa de 10x10
+    top_juego.geometry("650x700") # Ajustamos el tamaño ideal para contener cómodamente el mapa de 10x10
     top_juego.config(bg=faccion_actual.fondo_menu)
     ventana_actual = top_juego
 
@@ -277,7 +277,7 @@ def click2(): # ABRIR FASE DE PREPARACIÓN Y CONFIGURACIÓN DE PARTIDA
     marco_botones_j1 = tk.Frame(marco_seleccion, bg=faccion_actual.fondo_menu)
     marco_botones_j1.pack()
 
-    # Listas paralelas lineales en vez de diccionarios para manejar los estilos dinámicos de selección
+    # Listas paralelas lineales para manejar los estilos dinámicos de selección
     nombres_botones_j1 = []
     componentes_botones_j1 = []
 

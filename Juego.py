@@ -1,7 +1,22 @@
 import time
 from Combate import Combate
-from Torres import TorreBasica, TorrePesada, TorreMagica, TorrePrincipal, Torres
-from Atacante import SoldadoBasico, Tanque, Explorador
+
+class EstructuraBaseFija:
+    def __init__(self):
+        self.nombre = "Base Principal"
+        self.costo = 0
+        self.vida = 500  
+        self.fila = 0
+        self.columna = 0
+
+    def destruida(self):
+        return self.vida <= 0
+
+    def recibir_dano(self, cantidad):
+        self.vida -= cantidad
+
+    def verificacion_rango(self, unidad):
+        return False
 
 class Juego:
     def __init__(self, defensor, rolatacante):
@@ -10,139 +25,137 @@ class Juego:
         self.victorias_defensor = 0
         self.victorias_atacante = 0
         self.ronda = 1
-        self.tiempo_ronda = 180
+        self.tiempo_ronda = 180  
         self.inicio_ronda = None
         self.filas = 10
         self.columnas = 10
-        self.dano_anterior_atacante = 0
-    
+        self.pelea = None
+        self.ultimo_ingreso_pasivo = 0 # Rastreador del último segundo de dinero otorgado
+
     def iniciar_ronda(self):
         self.inicio_ronda = time.time()
-        self.defensor.dinero += 100
-        self.rolatacante.dinero += 100
-
-        bono_atacante = self.dano_anterior_atacante // 5
+        self.ultimo_ingreso_pasivo = time.time()
         
-        self.rolatacante.dinero += bono_atacante
+        self.defensor.dinero = 300 
+        self.rolatacante.dinero = 500
+        
+        self.defensor.torres = []
+        self.rolatacante.atacantes = []
+        
+        for col in range(self.columnas):
+            base_defensora = EstructuraBaseFija()
+            base_defensora.fila = 0
+            base_defensora.columna = col
+            self.defensor.torres.append(base_defensora)
+            
+        self.pelea = Combate(self.defensor, self.rolatacante)
+
+    def obtener_tiempo_restante(self):
+        if self.inicio_ronda is None:
+            return self.tiempo_ronda
+        tiempo_transcurrido = time.time() - self.inicio_ronda
+        restante = self.tiempo_ronda - tiempo_transcurrido
+        return max(0, int(restante))
 
     def tiempo_terminado(self):
-        tiempo_actual = time.time()
-        tiempo_trascurrido = tiempo_actual - self.inicio_ronda
-        if tiempo_trascurrido >= self.tiempo_ronda:
-            return True
-        return False
+        return self.obtener_tiempo_restante() <= 0
     
     def posicion_valida_defensor(self, fila):
-        if 0 <= fila <= 3:
-            return True
-        return False
+        return 1 <= fila <= 4
     
     def posicion_valida_atacante(self, fila):
-        if 6 <= fila <= 9:
-            return True
-        return False
+        return 5 <= fila <= 9
     
     def casilla_ocupada(self, fila, columna):
-        for torres in self.defensor.torres:
-            if torres.fila == fila and torres.columna == columna:
+        for t in self.defensor.torres:
+            if t.fila == fila and t.columna == columna:
                 return True
-        
-        for unidad in self.rolatacante.atacantes:
-            if unidad.fila == fila and columna == columna:
-                return True
-        
         return False
     
     def comprar_torre(self, torres, fila, columna):
         if columna < 0 or columna >= self.columnas:
             return False
-        
-        if not self.posicion_valida_defensor(fila):
+        if not self.posicion_valida_defensor(fila) or self.casilla_ocupada(fila, columna):
             return False
         
-        if self.casilla_ocupada(fila, columna):
-            return False
-        
-        if self.defensor.comprar_torres(torres):
+        if self.defensor.dinero >= torres.costo:
+            self.defensor.dinero -= torres.costo
             torres.fila = fila
             torres.columna = columna
+            self.defensor.torres.append(torres)
             return True 
         return False
         
     def comprar_unidad(self, unidad, fila, columna):
         if columna < 0 or columna >= self.columnas:
             return False
-        
         if not self.posicion_valida_atacante(fila):
             return False
         
-        if self.casilla_ocupada(fila, columna):
-            return False
-        
-        if self.rolatacante.comprar_unidad(unidad):
+        if self.rolatacante.dinero >= unidad.costo:
+            self.rolatacante.dinero -= unidad.costo
             unidad.fila = fila
             unidad.columna = columna
+            unidad.ultimo_movimiento = time.time() # Sincroniza su cronómetro al nacer
+            self.rolatacante.atacantes.append(unidad)
             return True
         return False
 
     def atacante_gana_ronda(self):
-        if self.defensor.base.destruida():
+        bases_vivas = [t for t in self.defensor.torres if t.fila == 0]
+        if len(bases_vivas) < self.columnas:
             self.victorias_atacante += 1
             return True
+            
+        for u in self.rolatacante.atacantes:
+            if u.fila < 0:  
+                self.victorias_atacante += 1
+                return True
         return False
 
     def defensor_gana_ronda(self):
-        if len(self.rolatacante.atacantes) == 0:
-            unidad_mas_barata = 999999
-
-            for unidad in self.rolatacante.catalogo_unidades:
-                if unidad.costo < unidad_mas_barata:
-                    unidad_mas_barata = unidad.costo
-
-            if self.rolatacante.dinero < unidad_mas_barata:
-                self.victorias_defensor += 1
-                return True
-            
-        return False
-
-    def empate_ronda(self):
         if self.tiempo_terminado():
+            self.victorias_defensor += 1
             return True
         return False
 
     def ganador_final(self):
-
         if self.victorias_defensor == 3:
-            return True
-
+            return "Defensor"
         if self.victorias_atacante == 3:
-            return True
-        
-        return False
+            return "Atacante"
+        return None
 
-    def ejecutar_ronda(self):
-        self.iniciar_ronda()
-        pelea = Combate(self.defensor, self.rolatacante)
+    def generar_ingreso_pasivo(self):
+        # CORRECCIÓN: El dinero ahora se entrega estrictamente cada 1 segundo transcurrido en el juego
+        tiempo_actual = time.time()
+        if tiempo_actual - self.ultimo_ingreso_pasivo >= 1.0:
+            self.defensor.dinero += 5
+            self.rolatacante.dinero += 8
+            self.ultimo_ingreso_pasivo = tiempo_actual
 
-        while True:
-            pelea.actualizar_combate()
-            time.sleep(1)
-
-            if self.atacante_gana_ronda():
-                break
-
-            if self.defensor_gana_ronda():
-                break
-
-            if self.empate_ronda():
-                break
-        
-        self.dano_anterior_atacante = pelea.dano_total_atacante
-
-    def ejecutar_juego(self):
-        while True:
-            self.ejecutar_ronda()
-
-            if self.ganador_final():
-                break
-            self.ronda += 1
+    def actualizar_ciclo_combate(self):
+        if hasattr(self, 'pelea') and self.pelea:
+            tiempo_actual = time.time()
+            
+            # MOVIMIENTO CALCULADO POR VELOCIDAD REAL
+            for u in self.rolatacante.atacantes:
+                # Si ha pasado el intervalo requerido según su velocidad, avanza 1 casilla
+                # Intervalo = 1 / velocidad (Ej: vel 1 = cada 1s, vel 2 = cada 0.5s, vel 0.5 = cada 2s)
+                intervalo_movimiento = 1.0 / u.velocidad
+                if tiempo_actual - u.ultimo_movimiento >= intervalo_movimiento:
+                    # Solo se mueve si no está atacando activamente una torre adyacente
+                    esta_bloqueado = False
+                    for t in self.defensor.torres:
+                        if abs((u.fila - 1) - t.fila) + abs(u.columna - t.columna) <= 0:
+                            esta_bloqueado = True
+                            break
+                    
+                    if not esta_bloqueado:
+                        u.fila -= 1 
+                    u.ultimo_movimiento = tiempo_actual
+            
+            # PROCESO DE ATAQUES (Se ejecutan en intervalos controlados de 1 segundo)
+            self.pelea.ataque_torres()
+            self.pelea.ataque_unidades()
+            self.pelea.limpiar_objetos()

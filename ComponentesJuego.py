@@ -1,196 +1,244 @@
 import tkinter as tk
 from tkinter import messagebox
-from PIL import Image, ImageTk  # Librerías esenciales para procesar y redimensionar imágenes .png
-from Torres import Defensor, TorreBasica, TorrePesada, TorreMagica 
+from PIL import Image, ImageTk  
+from Torres import TorreBasica, TorrePesada, TorreMagica 
+from Atacante import SoldadoBasico, Tanque, Explorador
+from Juego import Juego 
 
-class TableroJuego: # Clase encargada de construir y gestionar el mapa interactivo de casillas
-    
+class TableroJuego:
     def __init__(self, ventana_contenedor, faccion_defensor, faccion_atacante, defensor_logico): 
         self.contenedor = ventana_contenedor
-        self.faccion_defensor = faccion_defensor  # Objeto de la facción elegida por el jugador 1 (Defensor)
-        self.faccion_atacante = faccion_atacante  # Objeto de la facción elegida por el jugador 2 (Atacante)
-        self.defensor = defensor_logico           # Conexión lógica con Torres.py para manejar dinero y compras
+        self.faccion_defensor = faccion_defensor  
+        self.faccion_atacante = faccion_atacante  
         
-        # Matriz lógica de 10x10 que inicia vacía (None) para registrar las estructuras
-        self.matriz_logica = [[None for _ in range(10)] for _ in range(10)] 
-        self.casillas = []                        # Guardará las referencias visuales de cada botón tk.Button
+        from Atacante import RolAtacante
+        atacante_logico = RolAtacante()
         
-        # Obtiene los colores de fondo del mapa basados en el defensor
-        self.color1, self.color2 = self.obtener_colores_faccion()
+        self.juego = Juego(defensor_logico, atacante_logico)
+        self.casillas = []                        
+        self.def_c1, self.def_c2 = self.obtener_colores_faccion(self.faccion_defensor.nombre)
+        self.ata_c1, self.ata_c2 = self.obtener_colores_faccion(self.faccion_atacante.nombre)
         
-        # --- ATRIBUTOS INDIVIDUALES PARA LAS IMÁGENES PIXEL ART (SIN DICCIONARIOS) ---
+        self.seleccion_defensor = tk.StringVar(value="Torre Basica")
+        self.seleccion_atacante = tk.StringVar(value="Soldado Basico")
+        
         self.imagen_torre_basica = None
         self.imagen_torre_magica = None
         self.imagen_torre_pesada = None
-        self.imagen_muro = None
+        self.imagen_base_defensor = None
         
-        # Método interno para cargar los archivos físicos .png antes de pintar el tablero
         self.cargar_recursos_imagenes()
         
-        # Ejecuta la construcción visual de la cuadrícula
+        # --- MENÚS DE COMPRA ARRIBA Y ABAJO ---
+        self.menu_superior = tk.Frame(self.contenedor, bg="#1A1A1A", bd=2, relief="raised")
+        self.menu_superior.pack(fill="x", side="top", ipady=5)
+        
+        self.marco_tablero = tk.Frame(self.contenedor, bg="#000000", bd=3, relief="solid")
+        self.marco_tablero.pack(expand=True, pady=10)
+        
+        self.menu_inferior = tk.Frame(self.contenedor, bg="#1A1A1A", bd=2, relief="raised")
+        self.menu_inferior.pack(fill="x", side="bottom", ipady=5)
+        
+        self.construir_menu_defensor()
         self.generar_tablero()
+        self.construir_menu_atacante()
+        
+        messagebox.showinfo("¡PARTIDA INICIADA!", "¡Que empiece el juego!\nEl defensor protege la fila 0. El atacante despliega tropas en la mitad inferior y avanzan de forma continua.")
+        
+        self.juego.iniciar_ronda()
+        self.actualizar_renderizado_mapa()
+        
+        # Iniciamos el bucle en tiempo real a alta velocidad (Ticks de 200 milisegundos)
+        self.bucle_tiempo_real()
+
+    def obtener_colores_faccion(self, nombre_faccion): 
+        if nombre_faccion == "Medieval": return "#360857", "#5B1491"
+        elif nombre_faccion == "Futurista": return "#0F172A", "#1E293B"
+        elif nombre_faccion == "Zombie": return "#2D3111", "#42471A"
+        return "#404040", "#262626"
 
     def cargar_recursos_imagenes(self):
-        """
-        Evalúa el nombre de la facción del defensor mediante condicionales directos
-        y precarga los archivos de imagen correspondientes redimensionándolos a 60x60 píxeles.
-        """
-        nombre_facc = self.faccion_defensor.nombre
+        TAMANO_SPRITE = (40, 40)
+        facc_def = self.faccion_defensor.nombre
+        rutas_torres = {
+            "Medieval": ("Torrebasicamedieval.png", "Torremagicamedieval.png", "Torrepesadamedieval.png"),
+            "Futurista": ("Torrebasicafuturista.png", "TorremMagicafuturista.png", "Torrepesadafuturista.png"),
+            "Zombie": ("Torrebasicazombie.png", "Torremagicazombie.png", "Torrepesadazombie.png")
+        }
+        if facc_def in rutas_torres:
+            try:
+                self.imagen_torre_basica = ImageTk.PhotoImage(Image.open(rutas_torres[facc_def][0]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+                self.imagen_torre_magica = ImageTk.PhotoImage(Image.open(rutas_torres[facc_def][1]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+                self.imagen_torre_pesada = ImageTk.PhotoImage(Image.open(rutas_torres[facc_def][2]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except:
+                pass
+
+        diccionario_bases = {
+            "Medieval": "Basemedieval.png",
+            "Futurista": "Basefuturista.png",
+            "Zombie": "Basezombie.png"
+        }
+        if facc_def in diccionario_bases:
+            try:
+                self.imagen_base_defensor = ImageTk.PhotoImage(Image.open(diccionario_bases[facc_def]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except:
+                pass
+
+    def construir_menu_defensor(self):
+        self.lbl_def_info = tk.Label(self.menu_superior, text="", font=("Arial", 11, "bold"), bg="#1A1A1A", fg="#A855F7")
+        self.lbl_def_info.pack(side="left", padx=15)
         
-        # Inicializamos las rutas de archivos de forma predeterminada vacías
-        archivo_basica = ""
-        archivo_magica = ""
-        archivo_pesada = ""
-        archivo_muro = ""
+        opciones_frame = tk.Frame(self.menu_superior, bg="#1A1A1A")
+        opciones_frame.pack(side="right", padx=15)
         
-        # Asignación exacta según los nombres estandarizados de las imágenes
-        if nombre_facc == "Medieval":
-            archivo_basica = "Torrebasicamedieval.png"
-            archivo_magica = "Torremagicamedieval.png"
-            archivo_pesada = "Torrepesadamedieval.png"
-            archivo_muro   = "Muromedieval.png"
-            
-        elif nombre_facc == "Futurista":
-            archivo_basica = "Torrebasicafuturista.png"
-            archivo_magica = "TorremMagicafuturista.png"
-            archivo_pesada = "Torrepesadafuturista.png"
-            archivo_muro   = "Murofuturista.png"
-            
-        elif nombre_facc == "Zombie":
-            archivo_basica = "Torrebasicazombie.png"
-            archivo_magica = "Torremagicazombie.png"
-            archivo_pesada = "Torrepesadazombie.png"
-            archivo_muro   = "Murozombie.png"
+        estructuras = [("Torre Básica ($50)", "Torre Basica"), ("Torre Mágica ($100)", "Torre Magica"), ("Torre Pesada ($150)", "Torre Pesada")]
+        for texto, valor in estructuras:
+            tk.Radiobutton(opciones_frame, text=texto, variable=self.seleccion_defensor, value=valor, 
+                           bg="#1A1A1A", fg="white", selectcolor="#2D3748", font=("Arial", 9)).pack(side="left", padx=5)
 
-        # --- BLOQUES DE CARGA SEGUROS E INDIVIDUALES ---
-        # Definimos que cada casilla mida exactamente 60x60 píxeles en pantalla
-        TAMANO_SPRITE = (60, 60)
+    def construir_menu_atacante(self):
+        self.lbl_ata_info = tk.Label(self.menu_inferior, text="", font=("Arial", 11, "bold"), bg="#1A1A1A", fg="#22C55E")
+        self.lbl_ata_info.pack(side="left", padx=15)
         
-        if archivo_basica != "":
-            try:
-                img = Image.open(archivo_basica).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS)
-                self.imagen_torre_basica = ImageTk.PhotoImage(img)
-            except Exception as e:
-                print(f"Error cargando {archivo_basica}: {e}")
-
-        if archivo_magica != "":
-            try:
-                img = Image.open(archivo_magica).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS)
-                self.imagen_torre_magica = ImageTk.PhotoImage(img)
-            except Exception as e:
-                print(f"Error cargando {archivo_magica}: {e}")
-
-        if archivo_pesada != "":
-            try:
-                img = Image.open(archivo_pesada).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS)
-                self.imagen_torre_pesada = ImageTk.PhotoImage(img)
-            except Exception as e:
-                print(f"Error cargando {archivo_pesada}: {e}")
-
-        if archivo_muro != "":
-            try:
-                img = Image.open(archivo_muro).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS)
-                self.imagen_muro = ImageTk.PhotoImage(img)
-            except Exception as e:
-                print(f"Error cargando {archivo_muro}: {e}")
-
-    def obtener_colores_faccion(self): 
-        """
-        Establece los dos colores alternados de las casillas según la facción defensora.
-        """
-        nombre_faccion = self.faccion_defensor.nombre
-        if nombre_faccion == "Medieval":
-            return "#360857", "#5B1491"
-        elif nombre_faccion == "Futurista":
-            return "#0F172A", "#1E293B"
-        elif nombre_faccion == "Zombie":
-            return "#2D3111", "#42471A"
-        else:
-            return "#FFFFFF", "#000000"
-
-    def casilla_clickeada(self, fila, columna): 
-        """
-        Maneja la acción de colocar una estructura en la matriz cuando el jugador pulsa una casilla.
-        """
-        if self.matriz_logica[fila][columna] is not None: 
-            torre_existente = self.matriz_logica[fila][columna] 
-            messagebox.showinfo("Casilla Ocupada", f"Aquí ya hay una {torre_existente.nombre}.\nVida: {torre_existente.vida}")
-            return
-
-        # Instanciamos por defecto una Torre Básica para la prueba de compra
-        nueva_torre = TorreBasica() 
-
-        if self.defensor.dinero >= nueva_torre.costo: 
-            self.defensor.comprar_torres(nueva_torre)          
-            self.matriz_logica[fila][columna] = nueva_torre     
-            
-            boton_presionado = self.casillas[fila][columna]     
-            
-            # --- SELECCIÓN Y ASIGNACIÓN DINÁMICA DE IMÁGENES ---
-            imagen_a_colocar = None
-            emoji_respaldo = "🏰"
-
-            if isinstance(nueva_torre, TorreBasica):
-                imagen_a_colocar = self.imagen_torre_basica
-                emoji_respaldo = "🏹"
-            elif isinstance(nueva_torre, TorreMagica):
-                imagen_a_colocar = self.imagen_torre_magica
-                emoji_respaldo = "🔮"
-            elif isinstance(nueva_torre, TorrePesada):
-                imagen_a_colocar = self.imagen_torre_pesada
-                emoji_respaldo = "💥"
-            
-            # Si la imagen correspondiente fue cargada con éxito a memoria, la mostramos
-            if imagen_a_colocar is not None:
-                boton_presionado.config(image=imagen_a_colocar, text="")
-                boton_presionado.image = imagen_a_colocar  # Mantiene la referencia viva en Tkinter
-            else:
-                # Respaldo visual si no se encuentran las imágenes en la carpeta raíz
-                boton_presionado.config(text=emoji_respaldo, fg="white", font=("Arial", 16, "bold"))
-            
-            print(f"¡{nueva_torre.nombre} colocada en [{fila}, {columna}]!")
-            messagebox.showinfo("Compra Exitosa", f"Se colocó {nueva_torre.nombre}.\nDinero restante: ${self.defensor.dinero}") 
-        else: 
-            messagebox.showwarning("Fondos Insuficientes", 
-                                   f"No te alcanza para la {nueva_torre.nombre}.\nCosto: ${nueva_torre.costo}\nTu dinero: ${self.defensor.dinero}")
+        opciones_frame = tk.Frame(self.menu_inferior, bg="#1A1A1A")
+        opciones_frame.pack(side="right", padx=15)
+        
+        unidades = [("Soldado ($40)", "Soldado Basico"), ("Explorador ($60)", "Explorador"), ("Tanque ($120)", "Tanque")]
+        for texto, valor in unidades:
+            tk.Radiobutton(opciones_frame, text=texto, variable=self.seleccion_atacante, value=valor, 
+                           bg="#1A1A1A", fg="white", selectcolor="#2D3748", font=("Arial", 9)).pack(side="left", padx=5)
 
     def generar_tablero(self): 
-        """
-        Dibuja físicamente la cuadrícula de botones fijando el tamaño de cada fila 
-        y columna en píxeles exactos para evitar colapsos visuales.
-        """
-        marco_tablero = tk.Frame(self.contenedor, bg=self.faccion_defensor.fondo_menu, bd=2, relief="solid")
-        marco_tablero.pack(expand=True, pady=(20, 20)) 
-
-        # Forzamos a que las 10 columnas midan exactamente 60 píxeles de ancho de manera absoluta
-        for c in range(10):
-            marco_tablero.grid_columnconfigure(c, minsize=60, weight=1)
-        # Forzamos a que las 10 filas midan exactamente 60 píxeles de alto de manera absoluta
-        for f in range(10):
-            marco_tablero.grid_rowconfigure(f, minsize=60, weight=1)
+        for c in range(10): self.marco_tablero.grid_columnconfigure(c, minsize=40, weight=1)
+        for f in range(10): self.marco_tablero.grid_rowconfigure(f, minsize=40, weight=1)
 
         for fila in range(10):
             fila_botones = []
             for columna in range(10):
-                if (fila + columna) % 2 == 0: 
-                    color_fondo = self.color1
+                if fila <= 4:
+                    color_fondo = self.def_c1 if (fila + columna) % 2 == 0 else self.def_c2
                 else:
-                    color_fondo = self.color2
+                    color_fondo = self.ata_c1 if (fila + columna) % 2 == 0 else self.ata_c2
                 
-                # Creamos el botón vacío sin dimensiones de caracteres de texto fijas
-                btn_casilla = tk.Button( 
-                    marco_tablero, 
-                    bg=color_fondo, 
-                    activebackground="#C3D12B", 
-                    bd=1, 
-                    relief="groove"
-                )
-                # Al usar sticky="nsew", forzamos al botón a rellenar el espacio absoluto de la celda de 60x60
+                btn_casilla = tk.Button(self.marco_tablero, bg=color_fondo, activebackground="#C3D12B", bd=1, relief="groove")
                 btn_casilla.grid(row=fila, column=columna, sticky="nsew")
-                
-                # Vinculamos la acción de manera segura
                 btn_casilla.config(command=lambda f=fila, c=columna: self.casilla_clickeada(f, c))
-                
                 fila_botones.append(btn_casilla)
-                
             self.casillas.append(fila_botones)
+
+    def casilla_clickeada(self, fila, columna): 
+        if fila == 0:
+            messagebox.showwarning("Inválido", "No puedes construir sobre las estructuras de la base principal.")
+            return
+
+        if fila <= 4:
+            tipo = self.seleccion_defensor.get()
+            nueva = TorreBasica() if tipo == "Torre Basica" else (TorreMagica() if tipo == "Torre Magica" else TorrePesada())
+            self.juego.comprar_torre(nueva, fila, columna)
+        else:
+            tipo = self.seleccion_atacante.get()
+            nueva = SoldadoBasico() if tipo == "Soldado Basico" else (Explorador() if tipo == "Explorador" else Tanque())
+            self.juego.comprar_unidad(nueva, fila, columna)
+        
+        self.actualizar_renderizado_mapa()
+
+    def actualizar_renderizado_mapa(self):
+        # CORRECCIÓN: Optimización drástica de dibujo. En lugar de borrar todo limpiamos de forma rápida
+        # para que la interfaz nunca sufra micro-congelamientos.
+        contenido_celdas = {}
+
+        # Mapeo de defensas y bases fijas
+        for t in self.juego.defensor.torres:
+            if 0 <= t.fila <= 9 and 0 <= t.columna <= 9:
+                contenido_celdas[(t.fila, t.columna)] = ("TORRE", t)
+
+        # Mapeo de atacantes
+        for u in self.juego.rolatacante.atacantes:
+            if 0 <= u.fila <= 9 and 0 <= u.columna <= 9:
+                contenido_celdas[(u.fila, u.columna)] = ("ATACANTE", u)
+
+        # Renderizado selectivo sobre los botones existentes
+        for fila in range(10):
+            for columna in range(10):
+                casilla = self.casillas[fila][columna]
+                if (fila, columna) in contenido_celdas:
+                    tipo, entidad = contenido_celdas[(fila, columna)]
+                    if tipo == "TORRE":
+                        if fila == 0:
+                            if self.imagen_base_defensor:
+                                if casilla.cget("image") == "":
+                                    casilla.config(image=self.imagen_base_defensor, text="")
+                                    casilla.image = self.imagen_base_defensor
+                            else:
+                                casilla.config(text="🏠", fg="#EAB308", font=("Arial", 11, "bold"), image="")
+                        else:
+                            self.colocar_grafico_en_casilla(fila, columna, entidad.nombre, "🏰")
+                    else: # ATACANTE
+                        emoji = "🧟" if "Tanque" in entidad.nombre or "Explorador" in entidad.nombre or "Soldado" in entidad.nombre else "⚔️"
+                        casilla.config(image="", text=f"{emoji}\n{int(entidad.vida)}", fg="#E11D48", font=("Arial", 8, "bold"))
+                else:
+                    # Si la casilla quedó vacía, devolvemos sus atributos normales sin reconstruir el botón
+                    if fila <= 4:
+                        color_original = self.def_c1 if (fila + columna) % 2 == 0 else self.def_c2
+                    else:
+                        color_original = self.ata_c1 if (fila + columna) % 2 == 0 else self.ata_c2
+                    
+                    if casilla.cget("text") != "" or casilla.cget("image") != "":
+                        casilla.config(image="", text="", bg=color_original)
+                        casilla.image = None
+
+        self.actualizar_pantallas_estado()
+
+    def colocar_grafico_en_casilla(self, fila, columna, nombre, emoji_respaldo):
+        boton = self.casillas[fila][columna]
+        imagen = None
+        if "Básica" in nombre: imagen = self.imagen_torre_basica
+        elif "Mágica" in nombre: imagen = self.imagen_torre_magica
+        elif "Pesada" in nombre: imagen = self.imagen_torre_pesada
+        
+        if imagen:
+            if boton.cget("image") == "":
+                boton.config(image=imagen, text="")
+                boton.image = imagen
+        else:
+            boton.config(text=emoji_respaldo, fg="white", font=("Arial", 11, "bold"), image="")
+
+    def actualizar_pantallas_estado(self):
+        total_segundos = self.juego.obtener_tiempo_restante()
+        minutos = total_segundos // 60
+        segundos = total_segundos % 60
+        texto_timer = f"{minutos:02d}:{segundos:02d}"
+
+        self.lbl_def_info.config(
+            text=f"DEFENSOR ({self.faccion_defensor.nombre})   |   Dinero: ${self.juego.defensor.dinero}   |   Ronda: {self.juego.ronda}/3   |   Tiempo: {texto_timer}"
+        )
+        self.lbl_ata_info.config(
+            text=f"ATACANTE ({self.faccion_atacante.nombre})   |   Dinero: ${self.juego.rolatacante.dinero}   |   Tiempo: {texto_timer}"
+        )
+
+    def bucle_tiempo_real(self):
+        # Ejecuta la lógica matemática y de transcurso del juego
+        self.juego.generar_ingreso_pasivo()
+        self.juego.actualizar_ciclo_combate()
+        self.actualizar_renderizado_mapa()
+        
+        if self.juego.atacante_gana_ronda():
+            messagebox.showinfo("Ronda Concluida", "¡Una estructura base superior fue destruida! Punto para el Atacante.")
+            self.avanzar_ronda_o_terminar()
+        elif self.juego.defensor_gana_ronda():
+            messagebox.showinfo("Ronda Concluida", "¡El tiempo terminó y resististe la horda! Punto para el Defensor.")
+            self.avanzar_ronda_o_terminar()
+        else:
+            # Re-llamado en 200 ms (5 veces por segundo) para máxima fluidez visual
+            self.contenedor.after(200, self.bucle_tiempo_real)
+
+    def avanzar_ronda_o_terminar(self):
+        ganador = self.juego.ganador_final()
+        if ganador:
+            messagebox.showinfo("¡FIN DE LA PARTIDA!", f"La horda ha terminado.\n¡EL GANADOR ABSOLUTO ES EL {ganador.upper()}!")
+            self.contenedor.quit()
+        else:
+            self.juego.ronda += 1
+            self.juego.iniciar_ronda()
+            self.actualizar_renderizado_mapa()
+            self.bucle_tiempo_real()

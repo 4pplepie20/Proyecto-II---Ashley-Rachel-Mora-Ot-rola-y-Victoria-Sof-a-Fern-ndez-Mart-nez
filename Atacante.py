@@ -27,11 +27,19 @@ class Atacante: #Clase que funciona como molde para la función de los atacantes
         self.velocidad = velocidad
         self.habilidad = habilidad
         self.recarga = 0
+        # CORRECCIÓN: Atributos de posición inicializados por defecto
+        self.fila = 0
+        self.columna = 0
+        self.ultimo_movimiento = time.time() # Para controlar la fluidez de movimiento
+        self.ultimo_ataque = time.time()     # Para controlar la fluidez de ataque
     
     'Métodos'
     def dano_recibido(self, cantidad): #Función que indica la cantidad de daño causado hacia el atacante
         self.vida -= cantidad #Cálculo entre la cantidad de vida del atacante menos la cantidad de vida que quita
     
+    def destruida(self):
+        return self.vida <= 0
+
     def mover(self, fila_actual):
         fila_actual += self.velocidad
         return fila_actual
@@ -48,7 +56,7 @@ class Atacante: #Clase que funciona como molde para la función de los atacantes
     def usar_habilidad(self):
         self.recarga = time.time()
 
-    def habilidad_especial(self):
+    def habilidad_especial(self, objetivo):
         pass
 
 class SoldadoBasico(Atacante):
@@ -58,33 +66,31 @@ class SoldadoBasico(Atacante):
             40,
             100,
             20,
-            1,
+            1, # 1 casilla por segundo
             5
         )
     
     def habilidad_especial(self, objetivo):
         if self.habilidad_disponible():
-            objetivo.recibir_dano()
-            objetivo.recibir_dano()
-
+            objetivo.recibir_dano(self.dano)
+            objetivo.recibir_dano(self.dano)
             self.usar_habilidad()
         
 class Tanque(Atacante):
     def __init__(self):
-
         super().__init__(
             "Tanque",
             90,
             250,
             35,
-            1,
+            0.5, # Más lento: 1 casilla cada 2 segundos
             8
         )
     
     def habilidad_especial(self, objetivo):
         if self.habilidad_disponible():
-            objetivo.recibir_daño(self.dano * 2)
-
+            # CORRECCIÓN: Cambiado 'recibir_daño' por 'recibir_dano' para evitar errores
+            objetivo.recibir_dano(self.dano * 2)
             self.usar_habilidad()
 
 class Explorador(Atacante):
@@ -94,13 +100,13 @@ class Explorador(Atacante):
             70,
             80, 
             15,
-            3,
+            2, # Más rápido: 2 casillas por segundo
             4
         )
     def habilidad_especial(self, estadoatacante):
         if self.habilidad_disponible():
-            estadoatacante.activar_escudo()
-
+            if hasattr(estadoatacante, 'activar_escudo'):
+                estadoatacante.activar_escudo()
             self.usar_habilidad()
 
 class RolAtacante:
