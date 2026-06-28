@@ -249,10 +249,10 @@ def click2(): # ABRIR FASE DE PREPARACIÓN Y CONFIGURACIÓN DE PARTIDA
     faccion_jugador1 = tk.StringVar(value=None)
     faccion_jugador2 = tk.StringVar(value=None)
 
-    # Creamos la ventana secundaria dedicada al juego principal
+    # Creamos la ventana secundaria dedicada a la preparación del juego
     top_juego = tk.Toplevel(ventana)
     top_juego.title("Configuración de Partida")
-    top_juego.geometry("650x750") # Ajustamos el tamaño ideal para contener cómodamente el mapa de 10x10
+    top_juego.geometry("650x500") # Ajustamos el tamaño ideal para contener cómodamente el mapa de 10x10
     top_juego.config(bg=faccion_actual.fondo_menu)
     ventana_actual = top_juego
 
