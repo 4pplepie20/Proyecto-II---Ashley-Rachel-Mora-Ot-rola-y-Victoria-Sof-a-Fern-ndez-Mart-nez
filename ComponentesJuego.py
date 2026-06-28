@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk  
-from Torres import TorreBasica, TorrePesada, TorreMagica 
+from Torres import TorreBasica, TorrePesada, TorreMagica # Asegúrate de importar tu clase Muro aquí si es necesario
 from Atacante import SoldadoBasico, Tanque, Explorador
 from Juego import Juego 
 
@@ -22,10 +22,17 @@ class TableroJuego:
         self.seleccion_defensor = tk.StringVar(value="Torre Basica")
         self.seleccion_atacante = tk.StringVar(value="Soldado Basico")
         
+        # Atributos de imágenes para torres, bases y MUROS
         self.imagen_torre_basica = None
         self.imagen_torre_magica = None
         self.imagen_torre_pesada = None
+        self.imagen_muro = None
         self.imagen_base_defensor = None
+
+        # Atributos de imágenes para atacantes
+        self.imagen_soldado = None
+        self.imagen_tanque = None
+        self.imagen_explorador = None
         
         self.cargar_recursos_imagenes()
         
@@ -43,12 +50,11 @@ class TableroJuego:
         self.generar_tablero()
         self.construir_menu_atacante()
         
-        messagebox.showinfo("¡PARTIDA INICIADA!", "¡Que empiece el juego!\nEl defensor protege la fila 0. El atacante despliega tropas en la mitad inferior y avanzan de forma continua.")
+        messagebox.showinfo("¡PARTIDA INICIADA!", "¡Que empiece el juego!\nEl defensor protege la fila 0. El atacante despliega tropas en la mitad inferior.")
         
         self.juego.iniciar_ronda()
         self.actualizar_renderizado_mapa()
         
-        # Iniciamos el bucle en tiempo real a alta velocidad (Ticks de 200 milisegundos)
         self.bucle_tiempo_real()
 
     def obtener_colores_faccion(self, nombre_faccion): 
@@ -60,29 +66,59 @@ class TableroJuego:
     def cargar_recursos_imagenes(self):
         TAMANO_SPRITE = (40, 40)
         facc_def = self.faccion_defensor.nombre
-        rutas_torres = {
-            "Medieval": ("Torrebasicamedieval.png", "Torremagicamedieval.png", "Torrepesadamedieval.png"),
-            "Futurista": ("Torrebasicafuturista.png", "TorremMagicafuturista.png", "Torrepesadafuturista.png"),
-            "Zombie": ("Torrebasicazombie.png", "Torremagicazombie.png", "Torrepesadazombie.png")
-        }
-        if facc_def in rutas_torres:
-            try:
-                self.imagen_torre_basica = ImageTk.PhotoImage(Image.open(rutas_torres[facc_def][0]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-                self.imagen_torre_magica = ImageTk.PhotoImage(Image.open(rutas_torres[facc_def][1]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-                self.imagen_torre_pesada = ImageTk.PhotoImage(Image.open(rutas_torres[facc_def][2]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            except:
-                pass
+        facc_ata = self.faccion_atacante.nombre
 
-        diccionario_bases = {
-            "Medieval": "Basemedieval.png",
-            "Futurista": "Basefuturista.png",
-            "Zombie": "Basezombie.png"
-        }
-        if facc_def in diccionario_bases:
-            try:
-                self.imagen_base_defensor = ImageTk.PhotoImage(Image.open(diccionario_bases[facc_def]).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            except:
-                pass
+        # Carga de imágenes de estructuras defensoras (con condicionales, sin diccionarios)
+        ruta_tb, ruta_tm, ruta_tp, ruta_muro, ruta_base = "", "", "", "", ""
+        if facc_def == "Medieval":
+            ruta_tb = "Torrebasicamedieval.png"
+            ruta_tm = "Torremagicamedieval.png"
+            ruta_tp = "Torrepesadamedieval.png"
+            ruta_muro = "Muromedieval.png"
+            ruta_base = "Basemedieval.png"
+        elif facc_def == "Futurista":
+            ruta_tb = "Torrebasicafuturista.png"
+            ruta_tm = "TorremMagicafuturista.png"
+            ruta_tp = "Torrepesadafuturista.png"
+            ruta_muro = "Murofuturista.png"
+            ruta_base = "Basefuturista.png"
+        elif facc_def == "Zombie":
+            ruta_tb = "Torrebasicazombie.png"
+            ruta_tm = "Torremagicazombie.png"
+            ruta_tp = "Torrepesadazombie.png"
+            ruta_muro = "Murozombie.png"
+            ruta_base = "Basezombie.png"
+
+        try:
+            if ruta_tb != "": self.imagen_torre_basica = ImageTk.PhotoImage(Image.open(ruta_tb).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            if ruta_tm != "": self.imagen_torre_magica = ImageTk.PhotoImage(Image.open(ruta_tm).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            if ruta_tp != "": self.imagen_torre_pesada = ImageTk.PhotoImage(Image.open(ruta_tp).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            if ruta_muro != "": self.imagen_muro = ImageTk.PhotoImage(Image.open(ruta_muro).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            if ruta_base != "": self.imagen_base_defensor = ImageTk.PhotoImage(Image.open(ruta_base).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+        except:
+            pass
+
+        # Carga de imágenes de atacantes
+        ruta_soldado, ruta_tanque, ruta_explorador = "", "", ""
+        if facc_ata == "Medieval":
+            ruta_soldado = "SoldadoMedieval.png"
+            ruta_tanque = "TanqueMedieval.png"
+            ruta_explorador = "ExploradorMedieval.png"
+        elif facc_ata == "Futurista":
+            ruta_soldado = "SoldadoFuturista.png"
+            ruta_tanque = "TanqueFuturista.png"
+            ruta_explorador = "ExploradorFuturista.png"
+        elif facc_ata == "Zombie":
+            ruta_soldado = "SoldadoZombie.png"
+            ruta_tanque = "TanqueZombie.png"
+            ruta_explorador = "ExploradorZombie.png"
+
+        try:
+            if ruta_soldado != "": self.imagen_soldado = ImageTk.PhotoImage(Image.open(ruta_soldado).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            if ruta_tanque != "": self.imagen_tanque = ImageTk.PhotoImage(Image.open(ruta_tanque).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            if ruta_explorador != "": self.imagen_explorador = ImageTk.PhotoImage(Image.open(ruta_explorador).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+        except:
+            pass
 
     def construir_menu_defensor(self):
         self.lbl_def_info = tk.Label(self.menu_superior, text="", font=("Arial", 11, "bold"), bg="#1A1A1A", fg="#A855F7")
@@ -91,7 +127,13 @@ class TableroJuego:
         opciones_frame = tk.Frame(self.menu_superior, bg="#1A1A1A")
         opciones_frame.pack(side="right", padx=15)
         
-        estructuras = [("Torre Básica ($50)", "Torre Basica"), ("Torre Mágica ($100)", "Torre Magica"), ("Torre Pesada ($150)", "Torre Pesada")]
+        # Agregamos la opción visual del Muro en la interfaz de compra
+        estructuras = [
+            ("Torre Básica ($50)", "Torre Basica"), 
+            ("Torre Mágica ($100)", "Torre Magica"), 
+            ("Torre Pesada ($150)", "Torre Pesada"),
+            ("Muro Defensivo ($30)", "Muro")
+        ]
         for texto, valor in estructuras:
             tk.Radiobutton(opciones_frame, text=texto, variable=self.seleccion_defensor, value=valor, 
                            bg="#1A1A1A", fg="white", selectcolor="#2D3748", font=("Arial", 9)).pack(side="left", padx=5)
@@ -133,7 +175,19 @@ class TableroJuego:
 
         if fila <= 4:
             tipo = self.seleccion_defensor.get()
-            nueva = TorreBasica() if tipo == "Torre Basica" else (TorreMagica() if tipo == "Torre Magica" else TorrePesada())
+            # Lógica de compra e instanciación del Muro
+            if tipo == "Torre Basica": nueva = TorreBasica()
+            elif tipo == "Torre Magica": nueva = TorreMagica()
+            elif tipo == "Torre Pesada": nueva = TorrePesada()
+            else:
+                # Aquí instancian su clase Muro desde Torres.py.
+                # Si aún no la crean, usaremos TorreBasica temporalmente cambiando su nombre
+                from Torres import TorreBasica
+                nueva = TorreBasica()
+                nueva.nombre = "Muro"
+                nueva.costo = 30
+                nueva.vida = 300 # Un muro suele tener bastante vida
+            
             self.juego.comprar_torre(nueva, fila, columna)
         else:
             tipo = self.seleccion_atacante.get()
@@ -143,27 +197,27 @@ class TableroJuego:
         self.actualizar_renderizado_mapa()
 
     def actualizar_renderizado_mapa(self):
-        # CORRECCIÓN: Optimización drástica de dibujo. En lugar de borrar todo limpiamos de forma rápida
-        # para que la interfaz nunca sufra micro-congelamientos.
-        contenido_celdas = {}
-
-        # Mapeo de defensas y bases fijas
-        for t in self.juego.defensor.torres:
-            if 0 <= t.fila <= 9 and 0 <= t.columna <= 9:
-                contenido_celdas[(t.fila, t.columna)] = ("TORRE", t)
-
-        # Mapeo de atacantes
-        for u in self.juego.rolatacante.atacantes:
-            if 0 <= u.fila <= 9 and 0 <= u.columna <= 9:
-                contenido_celdas[(u.fila, u.columna)] = ("ATACANTE", u)
-
-        # Renderizado selectivo sobre los botones existentes
         for fila in range(10):
             for columna in range(10):
                 casilla = self.casillas[fila][columna]
-                if (fila, columna) in contenido_celdas:
-                    tipo, entidad = contenido_celdas[(fila, columna)]
-                    if tipo == "TORRE":
+                entidad_encontrada = None
+                tipo_entidad = ""
+
+                for t in self.juego.defensor.torres:
+                    if t.fila == fila and t.columna == columna:
+                        entidad_encontrada = t
+                        tipo_entidad = "TORRE"
+                        break
+                
+                if entidad_encontrada is None:
+                    for u in self.juego.rolatacante.atacantes:
+                        if u.fila == fila and u.columna == columna:
+                            entidad_encontrada = u
+                            tipo_entidad = "ATACANTE"
+                            break
+
+                if entidad_encontrada is not None:
+                    if tipo_entidad == "TORRE":
                         if fila == 0:
                             if self.imagen_base_defensor:
                                 if casilla.cget("image") == "":
@@ -172,12 +226,12 @@ class TableroJuego:
                             else:
                                 casilla.config(text="🏠", fg="#EAB308", font=("Arial", 11, "bold"), image="")
                         else:
-                            self.colocar_grafico_en_casilla(fila, columna, entidad.nombre, "🏰")
-                    else: # ATACANTE
-                        emoji = "🧟" if "Tanque" in entidad.nombre or "Explorador" in entidad.nombre or "Soldado" in entidad.nombre else "⚔️"
-                        casilla.config(image="", text=f"{emoji}\n{int(entidad.vida)}", fg="#E11D48", font=("Arial", 8, "bold"))
+                            # Mapea dinámicamente si es torre o un muro
+                            self.colocar_grafico_torre(fila, columna, entidad_encontrada.nombre)
+                    
+                    elif tipo_entidad == "ATACANTE":
+                        self.colocar_grafico_atacante(fila, columna, entidad_encontrada)
                 else:
-                    # Si la casilla quedó vacía, devolvemos sus atributos normales sin reconstruir el botón
                     if fila <= 4:
                         color_original = self.def_c1 if (fila + columna) % 2 == 0 else self.def_c2
                     else:
@@ -189,19 +243,39 @@ class TableroJuego:
 
         self.actualizar_pantallas_estado()
 
-    def colocar_grafico_en_casilla(self, fila, columna, nombre, emoji_respaldo):
+    def colocar_grafico_torre(self, fila, columna, nombre):
         boton = self.casillas[fila][columna]
         imagen = None
+        emoji_respaldo = "🏰"
+        
+        # Identifica si la estructura es una torre común o es un Muro
         if "Básica" in nombre: imagen = self.imagen_torre_basica
         elif "Mágica" in nombre: imagen = self.imagen_torre_magica
         elif "Pesada" in nombre: imagen = self.imagen_torre_pesada
-        
+        elif "Muro" in nombre: 
+            imagen = self.imagen_muro
+            emoji_respaldo = "🧱" # Icono de ladrillos si no carga la imagen
+
         if imagen:
             if boton.cget("image") == "":
                 boton.config(image=imagen, text="")
                 boton.image = imagen
         else:
             boton.config(text=emoji_respaldo, fg="white", font=("Arial", 11, "bold"), image="")
+
+    def colocar_grafico_atacante(self, fila, columna, unidad):
+        boton = self.casillas[fila][columna]
+        imagen = None
+        
+        if "Soldado" in unidad.nombre: imagen = self.imagen_soldado
+        elif "Tanque" in unidad.nombre: imagen = self.imagen_tanque
+        elif "Explorador" in unidad.nombre: imagen = self.imagen_explorador
+
+        if imagen:
+            boton.config(image=imagen, text=f"{int(unidad.vida)}", compound="bottom", fg="white", font=("Arial", 8, "bold"))
+            boton.image = imagen
+        else:
+            boton.config(image="", text=f"🧟\n{int(unidad.vida)}", fg="#E11D48", font=("Arial", 8, "bold"))
 
     def actualizar_pantallas_estado(self):
         total_segundos = self.juego.obtener_tiempo_restante()
@@ -217,7 +291,6 @@ class TableroJuego:
         )
 
     def bucle_tiempo_real(self):
-        # Ejecuta la lógica matemática y de transcurso del juego
         self.juego.generar_ingreso_pasivo()
         self.juego.actualizar_ciclo_combate()
         self.actualizar_renderizado_mapa()
@@ -229,7 +302,6 @@ class TableroJuego:
             messagebox.showinfo("Ronda Concluida", "¡El tiempo terminó y resististe la horda! Punto para el Defensor.")
             self.avanzar_ronda_o_terminar()
         else:
-            # Re-llamado en 200 ms (5 veces por segundo) para máxima fluidez visual
             self.contenedor.after(200, self.bucle_tiempo_real)
 
     def avanzar_ronda_o_terminar(self):
