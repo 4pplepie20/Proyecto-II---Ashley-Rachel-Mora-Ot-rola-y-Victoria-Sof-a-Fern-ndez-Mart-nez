@@ -5,8 +5,8 @@ class Combate:
         self.dano_total_atacante = 0
 
     def mover_unidades(self):
-        # El movimiento se gestiona de manera continua en el bucle de tiempo real
-        pass
+        for unidad in self.rolatacante.atacantes:
+            unidad.mover()
 
     def ataque_torres(self):
         for torres in self.defensor.torres:

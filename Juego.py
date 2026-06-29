@@ -30,7 +30,7 @@ class Juego:
         self.filas = 10
         self.columnas = 10
         self.pelea = None
-        self.ultimo_ingreso_pasivo = 0 # Rastreador del último segundo de dinero otorgado
+        self.ultimo_ingreso_pasivo = 0 
 
     def iniciar_ronda(self):
         self.inicio_ronda = time.time()
@@ -96,7 +96,7 @@ class Juego:
             self.rolatacante.dinero -= unidad.costo
             unidad.fila = fila
             unidad.columna = columna
-            unidad.ultimo_movimiento = time.time() # Sincroniza su cronómetro al nacer
+            unidad.ultimo_movimiento = time.time() 
             self.rolatacante.atacantes.append(unidad)
             return True
         return False
@@ -127,7 +127,6 @@ class Juego:
         return None
 
     def generar_ingreso_pasivo(self):
-        # CORRECCIÓN: El dinero ahora se entrega estrictamente cada 1 segundo transcurrido en el juego
         tiempo_actual = time.time()
         if tiempo_actual - self.ultimo_ingreso_pasivo >= 1.0:
             self.defensor.dinero += 5
@@ -138,24 +137,28 @@ class Juego:
         if hasattr(self, 'pelea') and self.pelea:
             tiempo_actual = time.time()
             
-            # MOVIMIENTO CALCULADO POR VELOCIDAD REAL
+            # MOVIMIENTO CALCULADO CORREGIDO SIN BUCLES INFINITOS
             for u in self.rolatacante.atacantes:
-                # Si ha pasado el intervalo requerido según su velocidad, avanza 1 casilla
-                # Intervalo = 1 / velocidad (Ej: vel 1 = cada 1s, vel 2 = cada 0.5s, vel 0.5 = cada 2s)
                 intervalo_movimiento = 1.0 / u.velocidad
                 if tiempo_actual - u.ultimo_movimiento >= intervalo_movimiento:
-                    # Solo se mueve si no está atacando activamente una torre adyacente
-                    esta_bloqueado = False
+                    
+                    # CORRECCIÓN DIRECTA: Verificamos de forma limpia si la casilla de arriba está ocupada
+                    casilla_siguiente_ocupada = False
+                    nueva_fila = u.fila - 1
+                    
                     for t in self.defensor.torres:
-                        if abs((u.fila - 1) - t.fila) + abs(u.columna - t.columna) <= 0:
-                            esta_bloqueado = True
+                        if t.fila == nueva_fila and t.columna == u.columna:
+                            casilla_siguiente_ocupada = True
                             break
                     
-                    if not esta_bloqueado:
-                        u.fila -= 1 
+                    # Solo avanza si la casilla del frente está libre de estructuras defensoras
+                    if not casilla_siguiente_ocupada:
+                        u.fila = nueva_fila
+                    
+                    # Sincronizamos el tiempo de movimiento de la tropa
                     u.ultimo_movimiento = tiempo_actual
             
-            # PROCESO DE ATAQUES (Se ejecutan en intervalos controlados de 1 segundo)
+            # PROCESO DE ATAQUES Y LIMPIEZA DE OBJETOS MUERTOS
             self.pelea.ataque_torres()
             self.pelea.ataque_unidades()
             self.pelea.limpiar_objetos()

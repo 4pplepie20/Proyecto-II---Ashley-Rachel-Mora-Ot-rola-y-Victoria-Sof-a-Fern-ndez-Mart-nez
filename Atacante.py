@@ -41,7 +41,7 @@ class Atacante: #Clase que funciona como molde para la función de los atacantes
         return self.vida <= 0
 
     def mover(self, fila_actual):
-        fila_actual += self.velocidad
+        fila_actual -= self.velocidad
         return fila_actual
     
     def ataque(self, objetivo):

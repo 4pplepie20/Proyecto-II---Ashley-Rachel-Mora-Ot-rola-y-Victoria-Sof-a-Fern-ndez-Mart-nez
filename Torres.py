@@ -1,20 +1,5 @@
 import time
 
-"ESTADO DE TORRES"
-class Enemigo: #Sirve para representar al enemigo que se ataca
-
-    'Atributos'
-    def __init__(self, vida):
-        self.vida = vida
-        self.congelada = False #Enemigo inicialmente no está congelado
-    
-    'Métodos'
-    def recibir_dano(self, dano): #Función sobre el enemigo que sufrirá daño por la torre
-        self.vida -= dano #Se le quita vida al enemigo según la cantidad de daño que cause la torre
-    
-    def congelar(self): #Función para congelar
-        self.congelada = True #El enemigo se encuentra congelado
-
 "CLASE BASE DE TORRES"
 class Torres:
 
@@ -24,74 +9,90 @@ class Torres:
         self.costo = costo #Cuántas monedas se necesitan para comprarla
         self.vida = vida #La cantidad de vida predeterminada
         self.dano = dano #El daño que produce a enemigos
-        self.alcance = alcance #El alcance de sus ataques
+        self.alcance = alcance #El alcance de sus ataques (casillas de distancia)
         self.habilidad = habilidad #El número de segundos necesarios para usar la habilidad especial
         self.recarga = 0 #El inicio del turno, empieza en 0
+        # Posición en el tablero que se asigna al comprarse
+        self.fila = 0
+        self.columna = 0
     
     'Métodos'
-    def dano_recibido(self, cantidad): #Daño causado a la torre
-        self.vida -= cantidad #La vida se resta según la cantidad de daño que causa el enemigo
+    def dano_recibido(self, cantidad): #Daño causado a la torre por un atacante
+        self.vida -= cantidad 
+    
+    def recibir_dano(self, cantidad): # Nombre alterno por compatibilidad con Combate.py
+        self.vida -= cantidad
 
-    def verificación_rango(self, fila_torre, columna_torre, fila_unidad, columna_unidad): #Verifica si un enemigo está lo suficientemente cerca de la torre
-        distancia = abs(fila_torre - fila_unidad) + abs(columna_torre - columna_unidad) #Calcula la distancia y se utiliza valor absoluto para evitar números negativos
+    def destruida(self): # Evalúa si la torre cayó
+        return self.vida <= 0
+
+    # CORRECCIÓN: Método vital para realizar el daño al atacante
+    def ataque(self, enemigo):
+        if hasattr(enemigo, "dano_recibido"):
+            enemigo.dano_recibido(self.dano)
+
+    # CORRECCIÓN: Método que solicita Combate.py para saber si el atacante está en rango
+    def verificacion_rango(self, unidad):
+        # Si la torre es un Muro, no ataca a nadie (rango falso)
+        if "Muro" in self.nombre:
+            return False
+            
+        # Verifica si el atacante está en la misma columna y dentro del alcance (hacia abajo)
+        if self.columna == unidad.columna and unidad.fila > self.fila:
+            distancia = unidad.fila - self.fila
+            if distancia <= self.alcance:
+                return True
+        return False
         
-        if distancia <= self.alcance: #Condición de que debe ser una distancia menor o igual al alcance de la torre
-            return True #La distancia es menor o igual al alcance de la torre, así que se ataca
-        return False #La distancia es mayor, no cumple la condición
+    def habilidad_disponible(self): #Evalúa si ya pasó el tiempo de recarga
+        tiempo_actual = time.time()
+        if tiempo_actual - self.recarga >= self.habilidad:
+            return True
+        return False
     
-    def ataque(self, enemigo): #Daño que ejerce al enemigo
-        enemigo.recibir_dano(self.dano) #Llama a la función que recibe el objetivo
-    
-    def habilidad_disponible(self): #Función para saber si ya es posible utilizar la habilidad
-        tiempo_ahora = time.time() #Ofrece el tiempo actual en segundos
-
-        if tiempo_ahora - self.recarga >= self.habilidad: #Condición de que debe el tiempo debe ser mayor o igual a la cantidad necesaria para activar el poder
-            return True #Cumple la condición
-        return False #No cumple la condición
-
-    def habilidad_especial(self): #Es solo un molde para las subclases
+    def usar_habilidad(self): #Establece el tiempo en el que se usó la habilidad
+        self.recarga = time.time()
+        
+    def habilidad_especial(self, enemigo):
         pass
 
 
-"TIPOS DE TORRES"
+"CLASES DE LAS TORRES INDIVIDUALES"
 
-'TORRE BÁSICA'
-class TorreBasica(Torres): #Subclase con el tipo de torre, con el "Torres" dentro del nombre de la clase deja una herencia de información
-
-    'Atributos'
-    def __init__(self): 
-        super().__init__( #El super(). llama a los atributos de la clase base
-            "Torre Básica", #Nombre de la torre
-            50, #Costo
-            100, #Vida (HP)
-            20, #Daño ejercido
-            2, #Alcance
-            5 #Tiempo de recarga
+class TorreBasica(Torres):
+    def __init__(self):
+        super().__init__(
+            "Torre Básica",
+            50,
+            100,
+            15,
+            2,
+            4
         )
+        
+    def habilidad_especial(self, enemigo):
+        if self.habilidad_disponible():
+            # CORRECCIÓN: Se envía el daño como argumento y se usa dano_recibido
+            if hasattr(enemigo, "dano_recibido"):
+                enemigo.dano_recibido(self.dano * 2) # El daño se duplica
+            self.usar_habilidad()
     
-    def habilidad_especial(self, enemigo): #Habilidad especial de la torre
-        if self.habilidad_disponible(): #Condición si ha pasado el tiempo suficiente
-            enemigo.recibir_dano(self.dano) #Hace daño dos veces por el doble disparo
-            enemigo.recibir_dano(self.dano)
-
-            self.recarga = time.time() #Regresa al tiempo pasado
-
-class TorrePesada(Torres): 
+class TorrePesada(Torres):
     def __init__(self):
         super().__init__(
             "Torre Pesada",
-            135,
-            200,
+            120,
+            150,
             40,
-            2,
-            12
+            1,
+            6
         )
-    
+        
     def habilidad_especial(self, enemigo):
         if self.habilidad_disponible():
-            enemigo.recibir_dano(self.dano * 2) #El daño se duplica
-
-            self.recarga = time.time()
+            if hasattr(enemigo, "dano_recibido"):
+                enemigo.dano_recibido(self.dano * 2) # El daño se duplica
+            self.usar_habilidad()
     
 class TorreMagica(Torres):
     def __init__(self):
@@ -106,9 +107,14 @@ class TorreMagica(Torres):
     
     def habilidad_especial(self, enemigo):
         if self.habilidad_disponible():
-            enemigo.congelar() #Llama la función congelar y la vuelve True
+            # CORRECCIÓN: Si el atacante tiene la propiedad de congelarse o recibir efectos
+            if hasattr(enemigo, "congelar"):
+                enemigo.congelar() 
+            elif hasattr(enemigo, "dano_recibido"):
+                # Como alternativa, si no hay estado de congelación programado en el atacante, le resta velocidad temporalmente o hace daño
+                enemigo.dano_recibido(self.dano)
+            self.usar_habilidad()
 
-            self.recarga = time.time()
 
 "JUGADOR DE DEFENSA"
 class Defensor: #Clase que representa a quien defiende
@@ -117,12 +123,8 @@ class Defensor: #Clase que representa a quien defiende
         self.torres = [] #Lista donde se guardarán las torres que compre
     
     def comprar_torres(self, torres): #Función para poder comprar torres
-        if self.dinero >= torres.costo: #Condición que el dinero debe ser igual o mayor al costo de la torre
-            self.dinero -= torres.costo #Si se cumple la función, se resta el dinero del jugador con el costo de la torre
-            self.torres.append(torres) #Concatenación para guardar torre comprada en la lista
-
-            return True #Sí sucedió la compra
-        return False #No cumplió la condición, así que no sucedió la compra
-    
-    def ganar_dinero(self, ganancias): #Función para determinar la nueva cantidad de ganancias
-        self.dinero += ganancias #Se agregan las ganancias al dinero ya establecido
+        if self.dinero >= torres.costo: 
+            self.dinero -= torres.costo 
+            self.torres.append(torres) 
+            return True 
+        return False

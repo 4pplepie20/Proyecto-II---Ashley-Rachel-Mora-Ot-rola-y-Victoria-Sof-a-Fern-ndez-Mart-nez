@@ -1,9 +1,12 @@
+import os
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk  
 from Torres import TorreBasica, TorrePesada, TorreMagica # Asegúrate de importar tu clase Muro aquí si es necesario
 from Atacante import SoldadoBasico, Tanque, Explorador
 from Juego import Juego 
+from Atacante import RolAtacante
+atacante_logico = RolAtacante()
 
 class TableroJuego:
     def __init__(self, ventana_contenedor, faccion_defensor, faccion_atacante, defensor_logico): 
@@ -11,8 +14,6 @@ class TableroJuego:
         self.faccion_defensor = faccion_defensor  
         self.faccion_atacante = faccion_atacante  
         
-        from Atacante import RolAtacante
-        atacante_logico = RolAtacante()
         
         self.juego = Juego(defensor_logico, atacante_logico)
         self.casillas = []                        
@@ -78,7 +79,7 @@ class TableroJuego:
             ruta_base = "Basemedieval.png"
         elif facc_def == "Futurista":
             ruta_tb = "Torrebasicafuturista.png"
-            ruta_tm = "TorremMagicafuturista.png"
+            ruta_tm = "Torremagicafuturista.png"
             ruta_tp = "Torrepesadafuturista.png"
             ruta_muro = "Murofuturista.png"
             ruta_base = "Basefuturista.png"
@@ -89,14 +90,32 @@ class TableroJuego:
             ruta_muro = "Murozombie.png"
             ruta_base = "Basezombie.png"
 
-        try:
-            if ruta_tb != "": self.imagen_torre_basica = ImageTk.PhotoImage(Image.open(ruta_tb).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            if ruta_tm != "": self.imagen_torre_magica = ImageTk.PhotoImage(Image.open(ruta_tm).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            if ruta_tp != "": self.imagen_torre_pesada = ImageTk.PhotoImage(Image.open(ruta_tp).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            if ruta_muro != "": self.imagen_muro = ImageTk.PhotoImage(Image.open(ruta_muro).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            if ruta_base != "": self.imagen_base_defensor = ImageTk.PhotoImage(Image.open(ruta_base).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-        except:
-            pass
+        carpeta_actual = os.path.dirname(os.path.abspath(__file__))
+
+        def ruta_imagen(nombre_archivo):
+            return os.path.join(carpeta_actual, nombre_archivo)
+
+        # --- CARGA INDEPENDIENTE PARA LAS ESTRUCTURAS DEFENSORAS ---
+        if ruta_tb != "":
+            try: self.imagen_torre_basica = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_tb)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Torre Básica ({ruta_tb}): {e}")
+
+        if ruta_tm != "":
+            try: self.imagen_torre_magica = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_tm)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Torre Mágica ({ruta_tm}): {e}")
+
+        if ruta_tp != "":
+            try: self.imagen_torre_pesada = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_tp)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Torre Pesada ({ruta_tp}): {e}")
+
+        if ruta_muro != "":
+            try: self.imagen_muro = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_muro)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Muro ({ruta_muro}): {e}")
+
+        if ruta_base != "":
+            try: self.imagen_base_defensor = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_base)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Base ({ruta_base}): {e}")
+
 
         # Carga de imágenes de atacantes
         ruta_soldado, ruta_tanque, ruta_explorador = "", "", ""
@@ -113,12 +132,18 @@ class TableroJuego:
             ruta_tanque = "TanqueZombie.png"
             ruta_explorador = "ExploradorZombie.png"
 
-        try:
-            if ruta_soldado != "": self.imagen_soldado = ImageTk.PhotoImage(Image.open(ruta_soldado).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            if ruta_tanque != "": self.imagen_tanque = ImageTk.PhotoImage(Image.open(ruta_tanque).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-            if ruta_explorador != "": self.imagen_explorador = ImageTk.PhotoImage(Image.open(ruta_explorador).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
-        except:
-            pass
+        # --- CARGA INDEPENDIENTE PARA LOS ATACANTES ---
+        if ruta_soldado != "":
+            try: self.imagen_soldado = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_soldado)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Soldado ({ruta_soldado}): {e}")
+
+        if ruta_tanque != "":
+            try: self.imagen_tanque = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_tanque)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Tanque ({ruta_tanque}): {e}")
+
+        if ruta_explorador != "":
+            try: self.imagen_explorador = ImageTk.PhotoImage(Image.open(ruta_imagen(ruta_explorador)).resize(TAMANO_SPRITE, Image.Resampling.LANCZOS))
+            except Exception as e: print(f"Error cargando Explorador ({ruta_explorador}): {e}")
 
     def construir_menu_defensor(self):
         self.lbl_def_info = tk.Label(self.menu_superior, text="", font=("Arial", 11, "bold"), bg="#1A1A1A", fg="#A855F7")
@@ -175,25 +200,41 @@ class TableroJuego:
 
         if fila <= 4:
             tipo = self.seleccion_defensor.get()
-            # Lógica de compra e instanciación del Muro
-            if tipo == "Torre Basica": nueva = TorreBasica()
-            elif tipo == "Torre Magica": nueva = TorreMagica()
-            elif tipo == "Torre Pesada": nueva = TorrePesada()
-            else:
-                # Aquí instancian su clase Muro desde Torres.py.
-                # Si aún no la crean, usaremos TorreBasica temporalmente cambiando su nombre
-                from Torres import TorreBasica
+
+            if tipo == "Torre Basica":
+                nueva = TorreBasica()
+
+            elif tipo == "Torre Magica":
+                nueva = TorreMagica()
+
+            elif tipo == "Torre Pesada":
+                nueva = TorrePesada()
+
+            elif tipo == "Muro":
                 nueva = TorreBasica()
                 nueva.nombre = "Muro"
                 nueva.costo = 30
-                nueva.vida = 300 # Un muro suele tener bastante vida
-            
+                nueva.vida = 300
+                nueva.dano = 0
+                nueva.alcance = 0
+
+            else:
+                return
+
             self.juego.comprar_torre(nueva, fila, columna)
+
         else:
             tipo = self.seleccion_atacante.get()
-            nueva = SoldadoBasico() if tipo == "Soldado Basico" else (Explorador() if tipo == "Explorador" else Tanque())
+
+            if tipo == "Soldado Basico":
+                nueva = SoldadoBasico()
+            elif tipo == "Explorador":
+                nueva = Explorador()
+            else:
+                nueva = Tanque()
+
             self.juego.comprar_unidad(nueva, fila, columna)
-        
+
         self.actualizar_renderizado_mapa()
 
     def actualizar_renderizado_mapa(self):
@@ -291,7 +332,6 @@ class TableroJuego:
         )
 
     def bucle_tiempo_real(self):
-        self.juego.generar_ingreso_pasivo()
         self.juego.actualizar_ciclo_combate()
         self.actualizar_renderizado_mapa()
         
